@@ -18,8 +18,8 @@ typedef struct {
 	u32 icon_addr;
 	u16 icon_fmt;
 	u16 icon_speed;
-	u8 unknown1;	/*** Permission key? ***/
-	u8 unknown2;	/*** Again, unknown ***/
+	u8 unknown1;	/*** Permission key ***/
+	u8 unknown2;	/*** Copy Counter ***/
 	u16 index;		/*** Ignore - and throw away ***/
 	u16 filesize8;	/*** File size / 8192 ***/
 	u16 reserved02;	/*** Always 0xffff ***/

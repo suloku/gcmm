@@ -25,6 +25,7 @@ static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN (32);
 /*** Memory File Buffer ***/
 #define MAXFILEBUFFER (1024 * 2048)	/*** 2MB Buffer ***/
 u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
+u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 u8 filelist[1024][1024];
 int maxfile;
 extern int cancel;
@@ -34,6 +35,7 @@ static card_dir CardDir;
 static card_file CardFile;
 static card_stat CardStatus;
 static int cardcount = 0;
+static u8 permission;
 
 
 GCI gci;
@@ -89,9 +91,11 @@ void GCIMakeHeader()
 	gci.icon_addr = CardStatus.icon_addr;
 	gci.icon_fmt = CardStatus.icon_fmt;
 	gci.icon_speed = CardStatus.icon_speed;
-
-	/*** In the games I've checked, these are always 0 ***/
-	gci.unknown1 = gci.unknown2 = 0;
+	
+	/*** Permission key has to be gotten separately. Make it 0 for normal privileges ***/
+	gci.unknown1 = permission;
+	/*** Who cares about copy counter ***/	
+	gci.unknown2 = 0;
 
 	/*** Block index does not matter, it won't be restored at the same spot ***/
 	gci.index = 32;
@@ -122,6 +126,7 @@ void ExtractGCIHeader()
 	CardStatus.icon_addr = gci.icon_addr;
 	CardStatus.icon_fmt = gci.icon_fmt;
 	CardStatus.icon_speed = gci.icon_speed;
+	permission = gci.unknown1;
 	CardStatus.len = gci.filesize8 * 8192;
 	CardStatus.comment_addr = gci.comment_addr;
 }
@@ -147,7 +152,7 @@ int CardGetDirectory (int slot){
 	/*** Try to mount the card ***/
   err = MountCard(slot);
   if (err){
-	WaitCardError("CardMount",CARD_GetErrorCode(slot));
+	WaitCardError("CardMount", err);
 	return 0;			/*** Unable to mount the card ***/
   }
 
@@ -195,10 +200,14 @@ void CardListFiles (){
 *
 * Retrieve a file header from the previously populated list.
 ****************************************************************************/
+//TODO: get icon and banner settings
 int CardReadFileHeader (int slot, int id){
+  int bytesdone = 0;
   int err;
+  u32 SectorSize;
   char company[4];
   char gamecode[6];
+  int filesize;
 
   if (id >= cardcount){
 	WaitPrompt("Bad id");
@@ -206,6 +215,7 @@ int CardReadFileHeader (int slot, int id){
   }
 
 	/*** Clear the work buffers ***/
+  memset (FileBuffer, 0, MAXFILEBUFFER);
   memset (SysArea, 0, CARD_WORKAREA);
   company[2] = 0;
   gamecode[4] = 0;
@@ -219,19 +229,47 @@ int CardReadFileHeader (int slot, int id){
 	/*** Mount the card ***/
   err = MountCard (slot);
   if (err){
-	WaitCardError("CardMount",CARD_GetErrorCode(slot));
+	WaitCardError("CardMount", err);
     return 0;
   }
 
+	/*** Retrieve sector size ***/
+  CARD_GetSectorSize (slot, &SectorSize);
+
+	/*** Open the file ***/
+  err = CARD_Open (slot, (char *) &CardList[id].filename, &CardFile);
+  if (err)
+    {
+      CARD_Unmount (slot);
+	  WaitCardError("CardOpen", err);
+      return 0;
+    }
+
 	/*** Get card status info ***/
   CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
+  CARD_GetAttributes(slot,CardFile.filenum, &permission);
 
   GCIMakeHeader();
+
+	/*** Copy the file contents to the buffer ***/
+  filesize = CardFile.len;
+
+  while (bytesdone < filesize)
+    {
+      CARD_Read (&CardFile, FileBuffer + MCDATAOFFSET + bytesdone, SectorSize,
+		 bytesdone);
+      bytesdone += SectorSize;
+    }
+	//get the comment (two 32 byte strings) into buffer
+	memcpy(CommentBuffer, FileBuffer + MCDATAOFFSET + CardStatus.comment_addr, 64);
+
+  /*** Close the file ***/
+  CARD_Close (&CardFile);
 
   /*** Unmount the card ***/
   CARD_Unmount (slot);
 
-  return 1;
+  return filesize + MCDATAOFFSET;
 
 }
 
@@ -269,7 +307,7 @@ int CardReadFile (int slot, int id){
 	/*** Mount the card ***/
   err = MountCard (slot);
   if (err){
-	WaitCardError("CardMount",CARD_GetErrorCode(slot));
+	WaitCardError("CardMount", err);
     return 0;
   }
 
@@ -281,12 +319,13 @@ int CardReadFile (int slot, int id){
   if (err)
     {
       CARD_Unmount (slot);
-	  WaitCardError("CardOpen",CARD_GetErrorCode(slot));
+	  WaitCardError("CardOpen", err);
       return 0;
     }
 
 	/*** Get card status info ***/
   CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
+  CARD_GetAttributes(slot,CardFile.filenum, &permission);
 
   GCIMakeHeader();
 
@@ -341,7 +380,7 @@ int CardWriteFile (int slot) {
 
   err = MountCard(slot);
   if (err){
-	WaitCardError("CardMount",CARD_GetErrorCode(slot));
+	WaitCardError("CardMount", err);
 	return 0;
   }
 
@@ -353,20 +392,24 @@ int CardWriteFile (int slot) {
       if (strcmp ((char *) CardDir.filename, (char *)filename) == 0){
 		 /*** Found the file - abort ***/
 	     CARD_Unmount (slot);
-		 WaitCardError("File already exists",CARD_GetErrorCode(slot));
+		 WaitCardError("File already exists", err);
 	     return 0;
 	  }
       err = CARD_FindNext (&CardDir);
   }
 
+//This is needed for propper restoring
   CARD_SetCompany(company);
   CARD_SetGamecode(gamecode);
 
   /*** Now restore the file from backup ***/
   err = CARD_Create (slot, (char *) filename, filelen, &CardFile);
   if (err){
+      //Return To show all so we don't have errors
+	  CARD_SetCompany(NULL);
+	  CARD_SetGamecode(NULL);
       CARD_Unmount (slot);
-	  WaitCardError("CardCreate",CARD_GetErrorCode(slot));
+	  WaitCardError("CardCreate", err);
       return 0;
   }
 
@@ -385,7 +428,12 @@ int CardWriteFile (int slot) {
   /*** Finally, update the status ***/
 
   CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
-
+  //For some reason this sets the file to Move->allowed, Copy->not allowed, Public file instead of the actual permission value
+  //CARD_SetAttributes(slot, CardFile.filenum, &permission);
+ 
+ //Return To show all so we don't have errors
+  CARD_SetCompany(NULL);
+  CARD_SetGamecode(NULL);
 
   CARD_Close (&CardFile);
   CARD_Unmount (slot);
@@ -449,7 +497,7 @@ void WaitCardError(char *src, int error) {
             sprintf(err, "Unknown");
             break;
     }
-    sprintf(msg, "MemCard Error: %s - %s", src, err);
+    sprintf(msg, "MemCard Error: %s - %d %s", src,error, err);
 
 	WaitPrompt(msg);
 
