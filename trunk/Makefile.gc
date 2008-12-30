@@ -17,7 +17,7 @@ include $(DEVKITPPC)/gamecube_rules
 #---------------------------------------------------------------------------------
 #TARGET		:=	$(notdir $(CURDIR))
 TARGET		:=	gcmm_GC
-BUILD		:=	build
+BUILD		:=	build_GC
 SOURCES		:=	source
 DATA		:=	data  
 INCLUDES	:=

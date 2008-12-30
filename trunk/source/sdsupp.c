@@ -14,14 +14,18 @@
 #include "sdsupp.h"
 #include "freetype.h"
 #include "gci.h"
+#include "mcard.h"
 
 #define PAGESIZE 20
 #define PADCAL 80
 
 /*** Memory Card FileBuffer ***/
-extern u8 FileBuffer[];
+#define MAXFILEBUFFER (1024 * 2048)	/*** 2MB Buffer ***/
+extern u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
+extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 extern u8 filelist[1024][1024];
 extern u32 maxfile;
+extern GCI gci;
 
 int SDSaveMCImage (){
 
@@ -151,7 +155,6 @@ int SDLoadMCImageHeader(char *sdfilename){
     //int offset = 0;
 	//int bytesToRead = 0;
     long bytesToRead = 0;
-	int header_size = 64;
 
   	/*** Make fullpath filename ***/
   sprintf (filename, "fatX:/%s/%s", MCSAVES, sdfilename);
@@ -182,7 +185,15 @@ filename[3]=48+PI_SDGECKO_A;
     }
 
     /*** Read the file header ***/
-	fread (FileBuffer,1,header_size,handle);
+	fread (FileBuffer,1,sizeof(GCI),handle);
+	
+	ExtractGCIHeader();
+	GCIMakeHeader();
+	
+	//Get the comment
+	fseek(handle, MCDATAOFFSET + gci.comment_addr, SEEK_SET);
+	fread (CommentBuffer, 1, MCDATAOFFSET, handle);
+	
   	/*** Close the file ***/
 	fclose (handle);
 	

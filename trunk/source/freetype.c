@@ -49,6 +49,8 @@ extern u32 maxfile;
 extern GCI gci;
 #define MAXFILEBUFFER (1024 * 2048)
 extern u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
+extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
+
 #define PAGESIZE 18
 
 
@@ -430,26 +432,25 @@ void showSaveInfo(int sel) {
     int bgcolor = getcolour(84,174,211);
     DrawBoxFilled(375, 175, 605, 410, bgcolor);
 	
-   // memcpy(company, CardList[sel].company, 2);
-   // memcpy(gamecode, CardList[sel].gamecode, 4);
-    //company[2] = gamecode[4] = 0;
-
     // read file, display some more info
-    // TODO: only read the necessary header + comment for sd
+    // TODO: only read the necessary header + comment, display banner and icon files
 	if (mode == RESTORE_MODE){
 		j = SDLoadMCImageHeader(filelist[sel]);
-		memcpy(&gci, FileBuffer, 64);
-		ExtractGCIHeader();
-		GCIMakeHeader();
+		// struct gci now contains header info
+		memcpy(company, gci.company, 2);
+		memcpy(gamecode, gci.gamecode, 4);
+		company[2] = gamecode[4] = 0;			
 		
-	}else if( mode == RESTORE_MODE || mode == DELETE_MODE){
+	}else if( (mode == BACKUP_MODE) | (mode == DELETE_MODE) ){
+		memcpy(company, CardList[sel].company, 2);
+		memcpy(gamecode, CardList[sel].gamecode, 4);
+		company[2] = gamecode[4] = 0;
 		j = CardReadFileHeader(CARD_SLOTB, sel);
-	}
-    // struct gci now contains header info
+		// struct gci now contains header info
 
-	memcpy(company, gci.company, 2);
-	memcpy(gamecode, gci.gamecode, 4);
-    company[2] = gamecode[4] = 0;	
+	}
+
+
     sprintf(txt, "#%d %s/%s", sel, gamecode, company);
     DrawText(x, y, txt);
     y += 20;	
@@ -498,14 +499,38 @@ void showSaveInfo(int sel) {
     sprintf(txt, "Blocks: %d", gci.filesize8);
     DrawText(x, y, txt);
     y += 20;
+	//M-> Cant' move the file //C->can't copy the file //P->public file //Most frecuent: xxP
     sprintf(txt, "Perm: %s%s%s",
             (gci.unknown1 & 16) ? "M " : "x",
             (gci.unknown1 & 8) ? "C " : "x",
             (gci.unknown1 & 4) ? "P" : "x");
     DrawText(x, y, txt);
     y += 20;
-    // Comment at MCDATAOFFSET+(comment addr)
-    char *comment = (char*) (FileBuffer+MCDATAOFFSET+gci.comment_addr);
+
+	//Bad way to display the file comment, should reposition to just show the full 32 char lines instead of spliting.
+	char comment1[32];
+	/*DrawText(x, y, "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF");
+	y += 20;
+	*/
+	strncpy(comment1, CommentBuffer, 25);
+	DrawText(x, y, comment1);
+	y += 20;
+	memset(comment1, 0, sizeof(comment1));
+	strncpy(comment1, CommentBuffer+25, 7);
+	DrawText(x, y, comment1);
+	y += 20;
+	memset(comment1, 0, sizeof(comment1));
+	strncpy(comment1, CommentBuffer+32, 25);
+	DrawText(x, y, comment1);
+	y += 20;
+	memset(comment1, 0, sizeof(comment1));
+	strncpy(comment1, CommentBuffer+57, 7);
+	DrawText(x, y, comment1);
+	y += 20;
+	memset(comment1, 0, sizeof(comment1));
+	
+   /* // Comment at MCDATAOFFSET+(comment addr)
+    //char *comment = (char*) (FileBuffer+MCDATAOFFSET+gci.comment_addr);
     j = 0;
     int x2, z = 0;
     int offset = 0;
@@ -534,7 +559,7 @@ void showSaveInfo(int sel) {
         //txt[z] = 0;
         DrawText(x, y, txt);
         y += 20;
-    }
+    }*/
 }
 
 
@@ -704,8 +729,11 @@ int ShowSelector (){
 
 void writeStatusBar(char *line1, char *line2) {
     int bgcolor = getcolour(0xff,0xff,0xff);
-    //DrawBoxFilled(10, 404, 510, 455, bgcolor);
+#ifdef HW_RVL
 	DrawBoxFilled(10, 430, 510, 485, bgcolor);
+#else
+	DrawBoxFilled(10, 404, 510, 455, bgcolor);
+#endif
     //setfontcolour(84,174,211);
     setfontcolour(28,28,28);
     DrawText(40, 450, line1);
@@ -719,7 +747,11 @@ void clearLeftPane() {
 
 void clearRightPane() {
     int bgcolor = getcolour(84,174,211);
+#ifdef HW_RVL	
     DrawBoxFilled(375, 140, 605, 410, bgcolor);
+#else
+	DrawBoxFilled(375, 110, 605, 380, bgcolor);
+#endif
 }
 
 void DrawHLine (int x1, int x2, int y, int color)

@@ -17,7 +17,7 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 #TARGET		:=	$(notdir $(CURDIR))
 TARGET		:=	gcmm_WII
-BUILD		:=	build
+BUILD		:=	build_WII
 SOURCES		:=	source
 DATA		:=	data  
 INCLUDES	:=
