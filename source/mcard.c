@@ -216,6 +216,7 @@ int CardReadFileHeader (int slot, int id){
 
 	/*** Clear the work buffers ***/
   memset (FileBuffer, 0, MAXFILEBUFFER);
+  memset (CommentBuffer, 0, 64);
   memset (SysArea, 0, CARD_WORKAREA);
   company[2] = 0;
   gamecode[4] = 0;
@@ -507,7 +508,7 @@ void MC_DeleteMode(int slot) {
     int memitems, err;
     int selected = 0;
     clearRightPane();
-    DrawText(388,160,"D e l e t e   M o d e");
+    DrawText(390,130,"D e l e t e   M o d e");
     writeStatusBar("Choose a file with UP button or DOWN button ", "Press A button to delete ") ;
     char msg[1024];
 
@@ -521,7 +522,7 @@ else
 {
     // TODO: implement showselector
     selected = ShowSelector ();
-    if (cancel) {WaitPrompt ("delete action cancelled !");}
+    if (cancel) {WaitPrompt ("Delete action cancelled !");}
    else{
    // selected = 1;
 

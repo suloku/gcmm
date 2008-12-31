@@ -16,11 +16,13 @@
 #include "mcard.h"
 #include "sdsupp.h"
 #include "bitmap.h"
-#define MCDATAOFFSET 64
 
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
 #endif
+
+#define MCDATAOFFSET 64
+#define FONT_SIZE 16 //pixels
 
 /*** Globals ***/
 FT_Library ftlibrary;
@@ -99,7 +101,7 @@ int FT_Init (){
   if (err)
     return 1;
 
-  setfontsize (16);
+  setfontsize (FONT_SIZE);
   setfontcolour (0xff, 0xff, 0xff);
 
   slot = face->glyph;
@@ -406,8 +408,8 @@ void WaitPrompt (char *msg){
   ShowScreen ();
   WaitButtonA ();
   //clear the text
-  int bgcolor = getcolour(0xff,0xff,0xff);
-  DrawBoxFilled(10, 430, 510, 485, bgcolor);  
+  writeStatusBar(" "," ");
+
 }
 
 void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b){
@@ -425,12 +427,12 @@ void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b){
 }
 
 void showSaveInfo(int sel) {
-    int y = 190, x = 380, j;
+    int y = 160, x = 380, j;
     char gamecode[5], company[3], txt[1024];
 
-	//clear right pane, but we don't want to erase previous text
+	//clear right pane, but just the save info
     int bgcolor = getcolour(84,174,211);
-    DrawBoxFilled(375, 175, 605, 410, bgcolor);
+	DrawBoxFilled(375, 145, 605, 380, bgcolor);
 	
     // read file, display some more info
     // TODO: only read the necessary header + comment, display banner and icon files
@@ -508,26 +510,33 @@ void showSaveInfo(int sel) {
     y += 20;
 
 	//Bad way to display the file comment, should reposition to just show the full 32 char lines instead of spliting.
-	char comment1[32];
+	//For testing how many chars fit the screen (they might not be all upper case in savegames so...)
 	/*DrawText(x, y, "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF");
 	y += 20;
 	*/
-	strncpy(comment1, CommentBuffer, 25);
+	//This relies in FONT_SIZE being 16 pixels
+	char comment1[26];
+	char comment2[6];
+	
+	strncpy(comment1, CommentBuffer, 26);
 	DrawText(x, y, comment1);
 	y += 20;
 	memset(comment1, 0, sizeof(comment1));
-	strncpy(comment1, CommentBuffer+25, 7);
+	
+	strncpy(comment2, CommentBuffer+26, 6);
+	DrawText(x, y, comment2);
+	y += 20;
+	memset(comment2, 0, sizeof(comment2));
+	
+	strncpy(comment1, CommentBuffer+32, 26);
 	DrawText(x, y, comment1);
 	y += 20;
 	memset(comment1, 0, sizeof(comment1));
-	strncpy(comment1, CommentBuffer+32, 25);
-	DrawText(x, y, comment1);
+	
+	strncpy(comment2, CommentBuffer+58, 6);
+	DrawText(x, y, comment2);
 	y += 20;
-	memset(comment1, 0, sizeof(comment1));
-	strncpy(comment1, CommentBuffer+57, 7);
-	DrawText(x, y, comment1);
-	y += 20;
-	memset(comment1, 0, sizeof(comment1));
+	memset(comment2, 0, sizeof(comment2));
 	
    /* // Comment at MCDATAOFFSET+(comment addr)
     //char *comment = (char*) (FileBuffer+MCDATAOFFSET+gci.comment_addr);
@@ -729,15 +738,11 @@ int ShowSelector (){
 
 void writeStatusBar(char *line1, char *line2) {
     int bgcolor = getcolour(0xff,0xff,0xff);
-#ifdef HW_RVL
-	DrawBoxFilled(10, 430, 510, 485, bgcolor);
-#else
-	DrawBoxFilled(10, 404, 510, 455, bgcolor);
-#endif
+    DrawBoxFilled(10, 404, 510, 455, bgcolor);
     //setfontcolour(84,174,211);
     setfontcolour(28,28,28);
-    DrawText(40, 450, line1);
-    DrawText(40, 475, line2);
+    DrawText(40, 425, line1);
+    DrawText(40, 450, line2);	
 }
 
 void clearLeftPane() {
@@ -747,11 +752,7 @@ void clearLeftPane() {
 
 void clearRightPane() {
     int bgcolor = getcolour(84,174,211);
-#ifdef HW_RVL	
-    DrawBoxFilled(375, 140, 605, 410, bgcolor);
-#else
-	DrawBoxFilled(375, 110, 605, 380, bgcolor);
-#endif
+	DrawBoxFilled(376, 112, 605, 380, bgcolor);
 }
 
 void DrawHLine (int x1, int x2, int y, int color)

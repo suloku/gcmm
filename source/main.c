@@ -35,6 +35,7 @@ GXRModeObj *vmode;		/*** Graphics Mode Object ***/
 u32 *xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;		/*** Frame buffer toggle ***/
 int screenheight;
+static int vmode_60hz = 0;
 
 extern u8 filelist[1024][1024];
 
@@ -97,51 +98,75 @@ Initialise (void)
   WPAD_Init ();
   #endif
 
-	/*** Try to match the current video display mode
-	     using the higher resolution interlaced.
+	// get default video mode
+	vmode = VIDEO_GetPreferredMode(NULL);
 
-	     So NTSC/MPAL gives a display area of 640x480
-	     PAL display area is 640x528
-	***/
-  switch (VIDEO_GetCurrentTvMode ())
-    {
-    case VI_NTSC:
-      vmode = &TVNtsc480IntDf;
-      break;
+	switch (vmode->viTVMode >> 2)
+	{
+		case VI_PAL:
+			// 576 lines (PAL 50Hz)
+			// display should be centered vertically (borders)
+			//Make all video modes the same size so menus doesn't screw up
+			vmode = &TVPal574IntDfScale;
+			vmode->xfbHeight = 480;
+			vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
+			vmode->viHeight = 480;
 
-    case VI_PAL:
-      vmode = &TVPal528IntDf;
-      break;
+			vmode_60hz = 0;
+			break;
 
-    case VI_MPAL:
-      vmode = &TVMpal480IntDf;
-      break;
+		case VI_NTSC:
+			// 480 lines (NTSC 60hz)
+			vmode_60hz = 1;
+			break;
 
-    default:
-      vmode = &TVNtsc480IntDf;
-      break;
-    }
+		default:
+			// 480 lines (PAL 60Hz)
+			vmode_60hz = 1;
+			break;
+	}
 
-	/*** Let libogc configure the mode ***/
-  VIDEO_Configure (vmode);
+#ifdef HW_DOL
+/* we have component cables, but the preferred mode is interlaced
+ * why don't we switch into progressive?
+ * on the Wii, the user can do this themselves on their Wii Settings */
+	if(VIDEO_HaveComponentCable())
+		vmode = &TVNtsc480Prog;
+#endif
+
+/*	// check for progressive scan // bool progressive = FALSE;
+	if (vmode->viTVMode == VI_TVMODE_NTSC_PROG)
+		progressive = true;
+*/
+
+#ifdef HW_RVL
+	// widescreen fix
+	if(CONF_GetAspectRatio())
+	{
+		vmode->viWidth = 678;
+		vmode->viXOrigin = (VI_MAX_WIDTH_PAL - 678) / 2;
+	}
+#endif
+
+	// configure VI
+	VIDEO_Configure (vmode);
+
+	// always 480 lines /*** Update screen height for font engine ***/
+	screenheight = vmode->xfbHeight;
 
 	/*** Now configure the framebuffer.
 	     Really a framebuffer is just a chunk of memory
 	     to hold the display line by line.
 	***/
-
-  xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
+	// Allocate the video buffers
+	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 	/*** I prefer also to have a second buffer for double-buffering.
 	     This is not needed for the console demo.
 	***/
-  xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
+	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 
 	/*** Define a console ***/
-  console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight,
-		vmode->fbWidth * 2);
-
-  /*** Update screen height for font engine ***/
-  screenheight = vmode->xfbHeight;
+  console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * 2);
 
 	/*** Clear framebuffer to black ***/
   VIDEO_ClearFrameBuffer (vmode, xfb[0], COLOR_BLACK);
@@ -176,8 +201,7 @@ void SD_BackupMode (){
   int bytestodo;
 
   clearRightPane();
-  //DrawText(390,130,"B a c k u p   M o d e");
-  DrawText(388,160,"B a c k u p   M o d e");
+  DrawText(390,130,"B a c k u p   M o d e");
   writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup to SD Card ") ;
 	/*** Get the directory listing from the memory card ***/
   memitems = CardGetDirectory (CARD_SLOTB);
@@ -222,8 +246,7 @@ void SD_RestoreMode (){
   int selected;
 
  clearRightPane();
- //DrawText(390,130,"R e s t o r e   M o d e");
- DrawText(388,160,"R e s t o r e   M o d e");
+ DrawText(390,130,"R e s t o r e   M o d e");
  writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
   files = SDGetFileList ();
   if (!files) {WaitPrompt ("No saved games in SD Card to restore !");}
@@ -232,7 +255,7 @@ else
 {
   selected = ShowSelector ();
 
- if (cancel) {WaitPrompt ("restore action cancelled !");}
+ if (cancel) {WaitPrompt ("Restore action cancelled !");}
  else
 {
   ShowAction ("Reading from SD Card");
@@ -314,7 +337,7 @@ int main (){
   Initialise ();	/*** Start video ***/
   FT_Init ();		/*** Start FreeType ***/
   if(!initFAT())
-	WaitPrompt("Insert SDCARD");
+	WaitPrompt("No SDCard!");
 
 #ifdef HW_RVL
   initialise_power();
@@ -344,11 +367,12 @@ int main (){
             break;
          case 500 :
 			#ifdef HW_RVL
+			//if there's a loader stub load it, if not return to wii menu.
 			if (!!*(u32*)0x80001800) exit(1);
 			else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 			#else
-			if (psoid[0] == PSOSDLOADID)
-			PSOReload ();
+			if (psoid[0] == PSOSDLOADID) PSOReload ();
+			else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 			#endif
             break; //PSO_Reload
       }
