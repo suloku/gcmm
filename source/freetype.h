@@ -22,6 +22,7 @@ void DrawText (int x, int y, char *text);
 void ShowScreen ();
 void ShowAction (char *msg);
 void WaitPrompt (char *msg);
+int WaitPromptChoice (const char *msg, const char *bmsg, const char *amsg);
 int ShowSelector ();
 int SelectMode ();
 void writeStatusBar(char *line1, char *line2);

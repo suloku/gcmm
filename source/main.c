@@ -328,6 +328,8 @@ else
 ****************************************************************************/
 int main (){
 
+	int have_sd;
+
 
 #ifdef HW_DOL
   int *psoid = (int *) 0x80001800;
@@ -336,8 +338,7 @@ int main (){
 
   Initialise ();	/*** Start video ***/
   FT_Init ();		/*** Start FreeType ***/
-  if(!initFAT())
-	WaitPrompt("No SDCard!");
+  have_sd = initFAT();
 
 #ifdef HW_RVL
   initialise_power();
@@ -360,10 +361,12 @@ int main (){
             MC_DeleteMode(CARD_SLOTB);
             break;
          case 300 :
-            SD_BackupMode();
+			if (have_sd) SD_BackupMode();
+			else WaitPrompt("Reboot aplication with an SD card");
             break;
          case 400 :
-            SD_RestoreMode();
+			if (have_sd) SD_RestoreMode();
+			else WaitPrompt("Reboot aplication with an SD card");            
             break;
          case 500 :
 			#ifdef HW_RVL

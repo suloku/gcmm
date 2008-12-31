@@ -395,6 +395,46 @@ void WaitButtonA (){
 #endif  
 }
 
+/****************************************************************************
+ * Wait for user to press A or B. Returns 0 = B; 1 = A
+ ****************************************************************************/
+
+int WaitButtonAB ()
+{
+#ifdef HW_RVL
+    u32 gc_btns, wm_btns;
+
+    while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_BUTTON_B))
+			|| (WPAD_ButtonsDown(0) & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_CLASSIC_BUTTON_A | WPAD_CLASSIC_BUTTON_B))
+			) VIDEO_WaitVSync();
+
+    while (1)
+    {
+        gc_btns = PAD_ButtonsDown (0);
+		wm_btns = WPAD_ButtonsDown (0);
+        if ( (gc_btns & PAD_BUTTON_A) || (wm_btns & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A)) )
+            return 1;
+        else if ( (gc_btns & PAD_BUTTON_B) || (wm_btns & (WPAD_BUTTON_B | WPAD_CLASSIC_BUTTON_B)) )
+            return 0;
+    }
+#else
+    u32 gc_btns;
+
+    while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_BUTTON_B)) ) VIDEO_WaitVSync();
+
+    while (1)
+    {
+        gc_btns = PAD_ButtonsDown (0);
+        if ( gc_btns & PAD_BUTTON_A )
+            return 1;
+        else if ( gc_btns & PAD_BUTTON_B )
+            return 0;
+    }
+#endif
+}
+
+
+
 /**
  * Show a prompt
  */
@@ -408,8 +448,25 @@ void WaitPrompt (char *msg){
   ShowScreen ();
   WaitButtonA ();
   //clear the text
-  writeStatusBar(" "," ");
+  writeStatusBar("","");
 
+}
+
+/****************************************************************************
+ * Show a prompt with choice of two options. Returns 1 if A button was pressed
+   and 0 if B button was pressed.
+ ****************************************************************************/
+int WaitPromptChoice (const char *msg, const char *bmsg, const char *amsg)
+{
+	char txt[80];
+	int ret;
+	sprintf (txt, "B = %s   :   A = %s", bmsg, amsg);
+	writeStatusBar(msg, txt);
+	ret = WaitButtonAB ();
+	//Clear the text
+	writeStatusBar("","");
+	
+	return ret;	
 }
 
 void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b){

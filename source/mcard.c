@@ -507,6 +507,7 @@ void WaitCardError(char *src, int error) {
 void MC_DeleteMode(int slot) {
     int memitems, err;
     int selected = 0;
+	int erase;
     clearRightPane();
     DrawText(390,130,"D e l e t e   M o d e");
     writeStatusBar("Choose a file with UP button or DOWN button ", "Press A button to delete ") ;
@@ -520,11 +521,22 @@ void MC_DeleteMode(int slot) {
         {WaitPrompt ("No saved games to delete !");}
 else
 {
+
+delete_loop:
+
     // TODO: implement showselector
     selected = ShowSelector ();
-    if (cancel) {WaitPrompt ("Delete action cancelled !");}
-   else{
+    if (cancel) {
+		WaitPrompt ("Delete action cancelled !");
+		return;
+	}
+
+	//0 = B wass pressed -> delete de file
+	erase = WaitPromptChoice("Are you sure to delete the file?", "Delete", "Cancel");
+	if (!erase){
    // selected = 1;
+   
+   
 
     /*** Delete the file ***/
     sprintf(msg, "Deleting \"%s\"", CardList[selected].filename);
@@ -549,6 +561,8 @@ else
 
     CARD_Unmount(slot);
    }
+   else 
+	goto delete_loop;
 
 
 
