@@ -91,6 +91,10 @@ int SDLoadMCImage(char *sdfilename){
 	//int bytesToRead = 0;
     long bytesToRead = 0;
 
+	/*** Clear the work buffers ***/
+  memset (FileBuffer, 0, MAXFILEBUFFER);
+  memset (CommentBuffer, 0, 64);
+
   	/*** Make fullpath filename ***/
     //sprintf (filename, "dev0:\\%s\\%s", MCSAVES, sdfilename);
   sprintf (filename, "fatX:/%s/%s", MCSAVES, sdfilename);
@@ -155,6 +159,10 @@ int SDLoadMCImageHeader(char *sdfilename){
     //int offset = 0;
 	//int bytesToRead = 0;
     long bytesToRead = 0;
+
+	/*** Clear the work buffers ***/
+  memset (FileBuffer, 0, MAXFILEBUFFER);
+  memset (CommentBuffer, 0, 64);
 
   	/*** Make fullpath filename ***/
   sprintf (filename, "fatX:/%s/%s", MCSAVES, sdfilename);
