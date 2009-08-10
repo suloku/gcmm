@@ -8,7 +8,6 @@
 #include <string.h>
 #include <ctype.h>
 //#include <sdcard.h>
-#include <fat.h>
 #include <sys/dir.h>
 
 #include "sdsupp.h"
@@ -26,6 +25,7 @@ extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 extern u8 filelist[1024][1024];
 extern u32 maxfile;
 extern GCI gci;
+extern int OFFSET;
 
 int SDSaveMCImage (){
 
@@ -47,20 +47,12 @@ int SDSaveMCImage (){
   memcpy (gamecode, &thisgci.gamecode, 4);
   memcpy (tfile, &thisgci.filename, CARD_FILENAMELEN);
   
-  sprintf (filename, "fatX:/%s", MCSAVES);
-#ifdef HW_RVL
-filename[3]=48+PI_INTERNAL_SD;
-#else
-filename[3]=48+PI_SDGECKO_A;
-#endif  
+  sprintf (filename, "fat:/%s", MCSAVES);
+
  mkdir(filename, S_IREAD | S_IWRITE);
   
-  sprintf (filename, "fatX:/%s/%s-%s-%s.gci", MCSAVES, company, gamecode,tfile);
-#ifdef HW_RVL
-filename[3]=48+PI_INTERNAL_SD;
-#else
-filename[3]=48+PI_SDGECKO_A;
-#endif 
+  sprintf (filename, "fat:/%s/%s-%s-%s.gci", MCSAVES, company, gamecode,tfile);
+
 
      /*** Open SD Card file ***/
   //handle = SDCARD_OpenFile (filename, "wb");
@@ -97,12 +89,8 @@ int SDLoadMCImage(char *sdfilename){
 
   	/*** Make fullpath filename ***/
     //sprintf (filename, "dev0:\\%s\\%s", MCSAVES, sdfilename);
-  sprintf (filename, "fatX:/%s/%s", MCSAVES, sdfilename);
-#ifdef HW_RVL
-filename[3]=48+PI_INTERNAL_SD;
-#else
-filename[3]=48+PI_SDGECKO_A;
-#endif	
+  sprintf (filename, "fat:/%s/%s", MCSAVES, sdfilename);
+
     //SDCARD_Init ();
 
     /*** Does this file exist ? ***/
@@ -137,11 +125,25 @@ filename[3]=48+PI_SDGECKO_A;
        //WaitPrompt("Incorrect file size.");
        return 0;
     }
-
+	fseek (handle , OFFSET , SEEK_SET);
     /*** Read the file ***/
     //SDCARD_ReadFile (handle, FileBuffer, bytesToRead);
 	fread (FileBuffer,1,bytesToRead,handle);
 
+	if(OFFSET == 0x80){
+		// swap byte pairs
+		// 0x2C and 0x2D, 0x2E and 0x2F, 0x30 and 0x31, 0x32 and 0x33,
+		// 0x34 and 0x35, 0x36 and 0x37, 0x38 and 0x39, 0x3A and 0x3B,
+		// 0x3C and 0x3D,0x3E and 0x3F.
+		int i = 0;
+		while(i<10)
+		{
+			u8 temp = FileBuffer[0x2C + i*2];
+			FileBuffer[0x2C + i*2] = FileBuffer[0x2C + i*2+1];
+			FileBuffer[0x2C + i*2+1] = temp;
+			i++;
+		}
+	}
     //sprintf(msg, "Offset: %d", bytesToRead);
     //WaitPrompt (msg);
    	/*** Close the file ***/
@@ -165,12 +167,8 @@ int SDLoadMCImageHeader(char *sdfilename){
   memset (CommentBuffer, 0, 64);
 
   	/*** Make fullpath filename ***/
-  sprintf (filename, "fatX:/%s/%s", MCSAVES, sdfilename);
-#ifdef HW_RVL
-filename[3]=48+PI_INTERNAL_SD;
-#else
-filename[3]=48+PI_SDGECKO_A;
-#endif	
+  sprintf (filename, "fat:/%s/%s", MCSAVES, sdfilename);
+
 
     /*** Open the SD Card file ***/
     //handle = SDCARD_OpenFile (filename, "rb");
@@ -192,14 +190,98 @@ filename[3]=48+PI_SDGECKO_A;
        return 0;
     }
 
-    /*** Read the file header ***/
+	OFFSET = 0;
+	char tmp[0xD];
+	char fileType[1024];
+   
+	char * dot;
+    int pos = 4;
+	dot = strrchr(filename,'.');
+	strncpy(fileType, dot+1,pos);
+	fileType[pos]='\0';
+
+	if(strcasecmp(fileType, "gci"))
+	{
+		fread(&tmp, 1, 0xD, handle);
+		rewind(handle);
+		if (!strcasecmp(fileType, "gcs"))
+		{
+			if (!memcmp(&tmp, "GCSAVE", 6))	// Header must be uppercase
+			{
+				OFFSET = 0x110;
+			}
+			else
+			{
+				WaitPrompt ("Incorrect Header. Not GCS File");
+				return 0;
+			}
+		}
+		else{
+			if (!strcasecmp(fileType, "sav"))
+			{
+				if (!memcmp(tmp, "DATELGC_SAVE", 0xC)) // Header must be uppercase
+				{
+					OFFSET = 0x80;
+				}
+				else
+				{
+					WaitPrompt ("Incorrect Header. Not SAV File");
+					return 0;
+				}
+			}
+		}
+	}
+	else OFFSET = 0;
+	fseek(handle, OFFSET, SEEK_SET);
+
+	/*** Read the file header ***/
 	fread (FileBuffer,1,sizeof(GCI),handle);
 	
+	u16 length = (bytesToRead - OFFSET - sizeof(GCI)) / 0x2000;
+	switch(OFFSET){
+		case 0x110:
+		{	// field containing the Block count as displayed within
+			// the GameSaves software is not stored in the GCS file.
+			// It is stored only within the corresponding GSV file.
+			// If the GCS file is added without using the GameSaves software,
+			// the value stored is always "1"
+			FileBuffer[0x38] = (u8)(length >> 8);
+			FileBuffer[0x39] = (u8)length;
+		}
+		break;
+		case 0x80:
+		{
+			// swap byte pairs
+			// 0x2C and 0x2D, 0x2E and 0x2F, 0x30 and 0x31, 0x32 and 0x33,
+			// 0x34 and 0x35, 0x36 and 0x37, 0x38 and 0x39, 0x3A and 0x3B,
+			// 0x3C and 0x3D,0x3E and 0x3F.
+			int i = 0;
+			while(i<10)
+			{
+				u8 temp = FileBuffer[0x2C + i*2];
+				FileBuffer[0x2C + i*2] = FileBuffer[0x2C + i*2+1];
+				FileBuffer[0x2C + i*2+1] = temp;
+				i++;
+			}
+			break;
+		}
+		default:
+			break;
+	}
+	u16 l2 =(u16)(FileBuffer[0x38] << 8) | FileBuffer[0x39];
+	if (length !=  l2)
+	{
+		sprintf(msg, "l1 = %x l2 = %x", length,l2);
+		WaitPrompt (msg);//"File Length does not equal filesize");
+		return 0;
+	}
+
 	ExtractGCIHeader();
 	GCIMakeHeader();
 	
 	//Get the comment
-	fseek(handle, MCDATAOFFSET + gci.comment_addr, SEEK_SET);
+	rewind(handle);
+	fseek(handle, MCDATAOFFSET + OFFSET + gci.comment_addr, SEEK_SET);
 	fread (CommentBuffer, 1, MCDATAOFFSET, handle);
 	
   	/*** Close the file ***/
@@ -221,12 +303,8 @@ static char namefile[256*4]; // reserva espacio suficiente para UTF-8
 static struct stat filestat;
 
 char filename[1024];
-  sprintf (filename, "fatX:/%s/", MCSAVES);
-#ifdef HW_RVL
-filename[3]=48+PI_INTERNAL_SD;
-#else
-filename[3]=48+PI_SDGECKO_A;
-#endif	  
+  sprintf (filename, "fat:/%s/", MCSAVES);
+  
 
 dir = diropen(filename);
 
@@ -239,7 +317,7 @@ while(1)
         }
     else
         {// namefile contiene el nombre del fichero en formato UTF-8
-		strcpy (filelist[filecount], namefile);
+		strcpy ((char *)filelist[filecount], namefile);
 		filecount++;
         }
     }

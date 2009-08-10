@@ -14,12 +14,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fat.h>
 #include <sys/dir.h>
 #include <sys/time.h>
+#include <fat.h>
 
 #ifdef HW_RVL
-#include <wiiuse/wpad.h>
+	#include <wiiuse/wpad.h>
+	#include <sdcard/wiisd_io.h>
+#else
+	#include <sdcard/gcsd.h>
 #endif
 
 #include "mcard.h"
@@ -45,38 +48,38 @@ static void updatePAD(){
 	WPAD_ScanPads();
 #endif
 }
-static int initFAT(){
-//init fat filesystem	
-	fatInit(8, false);
-	//sleep(2); // espero dos segundos, no se muy bien si para darle tiempo a que el dispositivo negocie o esté preparado para funcionar
-	//fatSetDefaultInterface(PI_INTERNAL_SD); // usa SD como fat:
-	int have_device=0; // bits que me indican la presencia de dispositivos
-	DIR_ITER *dir;
-	char path_initfat[]="fatX:/";
-#ifdef	HW_RVL
-	path_initfat[3]=48+PI_INTERNAL_SD; // path_file ="fatX:/";
-#else
-	path_initfat[3]=48+PI_SDGECKO_A; // path_file ="fatX:/";
-#endif
-	
-	int n;
-	for(n=0;n<5;n++) // numero de reintentos por si la unidad no está preparada o está "enojada" :lol:
-	{
-		dir = diropen(path_initfat);
-		if (dir) {
-			dirclose(dir);
-				//have_device|=1;
-				have_device=1;
-			#ifdef	HW_RVL				
-				fatEnableReadAhead(PI_INTERNAL_SD, 12, 32);// monta la cache
-			#endif
-				break;
-		} 
-		//usleep(200*1000);
-	}
-	
-	return have_device;
 
+static int initFAT(){
+
+#ifdef	HW_RVL
+   __io_wiisd.startup();
+	if (!__io_wiisd.isInserted()){	
+		return -1;
+	}
+	if (!fatMountSimple ("fat", &__io_wiisd)){
+		return -1;
+	}
+#else
+   __io_gcsda.startup();
+	if (!__io_gcsda.isInserted()){	
+		return -1;
+	}
+	if (!fatMountSimple ("fat", &__io_gcsda)){
+		return -1;
+	}
+#endif
+	return 1;
+}
+
+void deinitFAT(){
+	//First unmount all the devs...
+	fatUnmount ("fat");
+	//...and then shutdown em!
+#ifdef	HW_RVL	
+	__io_wiisd.shutdown();
+#else
+	__io_gcsda.shutdown();
+#endif
 }
 
 /****************************************************************************
@@ -259,7 +262,7 @@ else
  else
 {
   ShowAction ("Reading from SD Card");
-  if (SDLoadMCImage (filelist[selected])){
+  if (SDLoadMCImage ((char*)filelist[selected])){
       ShowAction ("Updating Memory Card");
       if (CardWriteFile (CARD_SLOTB)){
          WaitPrompt ("Restore Complete");
@@ -369,6 +372,7 @@ int main (){
 			else WaitPrompt("Reboot aplication with an SD card");            
             break;
          case 500 :
+			deinitFAT();
 			#ifdef HW_RVL
 			//if there's a loader stub load it, if not return to wii menu.
 			if (!!*(u32*)0x80001800) exit(1);

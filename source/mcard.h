@@ -14,5 +14,5 @@ int CardReadFile (int slot, int id);
 int CardWriteFile (int slot);
 void MC_DeleteMode(int slot);
 void WaitCardError(char *src, int error);
-
+static int OFFSET = 0;
 #endif
