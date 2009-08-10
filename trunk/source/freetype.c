@@ -456,7 +456,7 @@ void WaitPrompt (char *msg){
  * Show a prompt with choice of two options. Returns 1 if A button was pressed
    and 0 if B button was pressed.
  ****************************************************************************/
-int WaitPromptChoice (const char *msg, const char *bmsg, const char *amsg)
+int WaitPromptChoice ( char *msg, char *bmsg, char *amsg)
 {
 	char txt[80];
 	int ret;
@@ -494,7 +494,7 @@ void showSaveInfo(int sel) {
     // read file, display some more info
     // TODO: only read the necessary header + comment, display banner and icon files
 	if (mode == RESTORE_MODE){
-		j = SDLoadMCImageHeader(filelist[sel]);
+		j = SDLoadMCImageHeader((char*)filelist[sel]);
 		// struct gci now contains header info
 		memcpy(company, gci.company, 2);
 		memcpy(gamecode, gci.gamecode, 4);
@@ -518,7 +518,7 @@ void showSaveInfo(int sel) {
     u32 t = gci.time;  // seconds since jan 1, 2000
     int month, day, year, hour, min, sec;
     month = day = year = hour = min = sec = 0;
-    sprintf(txt, "D: %08lX", t);
+    sprintf(txt, "D: %08X", t);
     DrawText(x, y, txt);
     y += 20;
 
@@ -575,22 +575,22 @@ void showSaveInfo(int sel) {
 	char comment1[26];
 	char comment2[6];
 	
-	strncpy(comment1, CommentBuffer, 26);
+	strncpy(comment1, (char*)CommentBuffer, 26);
 	DrawText(x, y, comment1);
 	y += 20;
 	memset(comment1, 0, sizeof(comment1));
 	
-	strncpy(comment2, CommentBuffer+26, 6);
+	strncpy(comment2, (char*)CommentBuffer+26, 6);
 	DrawText(x, y, comment2);
 	y += 20;
 	memset(comment2, 0, sizeof(comment2));
 	
-	strncpy(comment1, CommentBuffer+32, 26);
+	strncpy(comment1, (char*)CommentBuffer+32, 26);
 	DrawText(x, y, comment1);
 	y += 20;
 	memset(comment1, 0, sizeof(comment1));
 	
-	strncpy(comment2, CommentBuffer+58, 6);
+	strncpy(comment2, (char*)CommentBuffer+58, 6);
 	DrawText(x, y, comment2);
 	y += 20;
 	memset(comment2, 0, sizeof(comment2));
@@ -645,7 +645,7 @@ static void ShowFiles (int offset, int selection){
   ypos += 25;
   j = 0;
   for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); i++){
-      strcpy (text, filelist[i]);
+      strcpy (text, (char*)filelist[i]);
       if (j == (selection - offset)){
       	  /*** Highlighted text entry ***/
 	     for (w = 0; w < 20; w++){
@@ -720,7 +720,10 @@ static void ShowFiles (int offset, int selection){
 * Returns index of file chosen.
 ****************************************************************************/
 int ShowSelector (){
-  u32 p, wp;
+  u32 p;
+#ifdef HW_RVL
+  u32 wp;
+#endif
   int redraw = 1;
   int quit = 0;
   int offset, selection;
@@ -742,7 +745,7 @@ int ShowSelector (){
 	#endif
 	){
         cancel = 1;
-        return;
+        return -1;
     }
 #ifdef HW_RVL	
 	if (power){
@@ -793,7 +796,7 @@ int ShowSelector (){
   return selection;
 }
 
-void writeStatusBar(char *line1, char *line2) {
+void writeStatusBar( char *line1, char *line2) {
     int bgcolor = getcolour(0xff,0xff,0xff);
     DrawBoxFilled(10, 404, 510, 455, bgcolor);
     //setfontcolour(84,174,211);
@@ -819,7 +822,7 @@ void DrawHLine (int x1, int x2, int y, int color)
     x1 >>= 1;
     x2 >>= 1;
     for (i = x1; i <= x2; i++) {
-        int *tmpfb = xfb[whichfb];
+        u32 *tmpfb = xfb[whichfb];
         tmpfb[y+i] = color;
     }
 }
@@ -829,7 +832,7 @@ void DrawVLine (int x, int y1, int y2, int color)
     int i;
     x >>= 1;
     for (i = y1; i <= y2; i++) {
-        int *tmpfb = xfb[whichfb];
+        u32 *tmpfb = xfb[whichfb];
         tmpfb[x + (640 * i) / 2] = color;
     }
 }

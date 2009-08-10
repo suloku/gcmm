@@ -165,7 +165,7 @@ int CardGetDirectory (int slot){
       memset (filelist[cardcount], 0, 1024);
       memcpy (company, &CardDir.company, 2);
       memcpy (gamecode, &CardDir.gamecode, 4);
-      sprintf (filelist[cardcount], "%s-%s-%s", company, gamecode, CardDir.filename);
+      sprintf ((char*)filelist[cardcount], "%s-%s-%s", company, gamecode, CardDir.filename);
       cardcount++;
       err = CARD_FindNext (&CardDir);
     }
@@ -390,7 +390,7 @@ int CardWriteFile (int slot) {
 	/*** If this file exists, abort ***/
   err = CARD_FindFirst (slot, &CardDir, false);
   while (err != CARD_ERROR_NOFILE){
-      if (strcmp ((char *) CardDir.filename, (char *)filename) == 0){
+      if (((u32)CardDir.gamecode == (u32)gamecode) && (strcmp ((char *) CardDir.filename, (char *)filename) == 0)){
 		 /*** Found the file - abort ***/
 	     CARD_Unmount (slot);
 		 WaitCardError("File already exists", err);
@@ -418,14 +418,14 @@ int CardWriteFile (int slot) {
   offset = 0;
   while (offset < filelen){
      if ((offset + SectorSize) <= filelen){
-        written = CARD_Write (&CardFile, FileBuffer + MCDATAOFFSET + offset, SectorSize, offset);
+        written = CARD_Write (&CardFile, FileBuffer + MCDATAOFFSET + offset + OFFSET, SectorSize, offset);
      }
      else{
-        written = CARD_Write (&CardFile, FileBuffer + MCDATAOFFSET + offset, ((offset + SectorSize) - filelen), offset);
+        written = CARD_Write (&CardFile, FileBuffer + MCDATAOFFSET + offset + OFFSET, ((offset + SectorSize) - filelen), offset);
      }
         offset += SectorSize;
   }
-
+	OFFSET = 0;
   /*** Finally, update the status ***/
 
   CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
@@ -543,7 +543,7 @@ delete_loop:
     writeStatusBar(msg,"");
 	//WaitPrompt(msg);
 
-    CARD_Init(CardList[selected].gamecode, CardList[selected].company);
+    CARD_Init((const char*)CardList[selected].gamecode, (const char*)CardList[selected].company);
 
     /*** Try to mount the card ***/
     err = MountCard(slot);
