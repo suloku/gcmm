@@ -131,6 +131,12 @@ int SDLoadMCImage(char *sdfilename){
 	fread (FileBuffer,1,bytesToRead,handle);
 
 	if(OFFSET == 0x80){
+        // swap byte pairs
+        // 0x06 and 0x07
+        u8 temp = FileBuffer[0x06];
+        FileBuffer[0x06] = FileBuffer[0x07];
+        FileBuffer[0x07] = temp;
+             
 		// swap byte pairs
 		// 0x2C and 0x2D, 0x2E and 0x2F, 0x30 and 0x31, 0x32 and 0x33,
 		// 0x34 and 0x35, 0x36 and 0x37, 0x38 and 0x39, 0x3A and 0x3B,
@@ -251,6 +257,12 @@ int SDLoadMCImageHeader(char *sdfilename){
 		break;
 		case 0x80:
 		{
+            // swap byte pairs
+            // 0x06 and 0x07
+            u8 temp = FileBuffer[0x06];
+            FileBuffer[0x06] = FileBuffer[0x07];
+            FileBuffer[0x07] = temp;
+            
 			// swap byte pairs
 			// 0x2C and 0x2D, 0x2E and 0x2F, 0x30 and 0x31, 0x32 and 0x33,
 			// 0x34 and 0x35, 0x36 and 0x37, 0x38 and 0x39, 0x3A and 0x3B,
