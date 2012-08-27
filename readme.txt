@@ -14,6 +14,7 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 |0Oื๘oท                            FEATURES                           ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 * Backups and restores savegames into GCI format
+* Restores savegames in GCS/SAV format
 * Deletes savegames from slot B memory card
 * Wiimote and GameCube controller support
 * Power button support
@@ -24,6 +25,27 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ื—–ญ—–ญ—–ญ—–ญ –ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ— ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—-ญ—–ญ-–•ฌ
 |0Oื๘oท                         UPDATE HISTORY                        ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
+
+Accepted PlabloACZ and Picachu025 modifications, with the following changes:
+
+*tweaked mount function
+*Filenames are no longer prefixed with a number for current sesion. Instead, when backing up a savegame if the same file exists on SD it will be prefixed with a growing number (if 00-savegame.gci exists, then it will try 01-savegame.gci, 02-savegame.gci... and so on)
+*Infinite loop won't happen when backupping a savegame
+
+[What's New r11 MOD 2 - September 11, 2011 - By Pikachu025]
+* R (GC-Pad) / 1 (Wiimote) now launches a "backup all" mode, where all saves on the memory card are written to the SD card without any user prompts in the meantime.
+* I came across a couple saves that had ridiculous filenames that refused to write to SD, so if the program comes across one of those, it'll now write them out as "illegal_name" instead of the actual filename.
+* Filenames written to SD are now prefixed with a number, counting up from 1 for every file written during the current session. I added this since I had multiple files that resulted in the same filename.
+* I also added a small check if the file was written correctly. If not, it'll retry. This probably results in an infinite loop when your SD card doesn't have enough free space, so ensure that I guess.
+* I also (quite shoddily) edited the image listing all the options to add the new option, it's ugly but does its job. Feel free to fix, I don't have Photoshop or anything here.
+
+[What's New r11 MOD - September 09, 2011 - By PabloACZ]
+* SDGetFileList() function in sdsupp.c updated to reflect the changes in DevKitPPC/libogc from the last three years (diropen, dirnext and dirclose commands were replaced with opendir, readdir and closedir, respectively).
+* Modified the MountCard() function in mcard.c to perform a probe on the GC Memory Card slot, to make sure it was mounted properly.
+* Improved the compatibility with GCS/SAV files with the patch posted by jcwitzel in December 2009 (http://code.google.com/p/gcmm/issues/detail?id=1#c25).
+* The Makefiles were modified to include the zlib in the libraries section. It seems that the latest libFreeType PPC port needs it to work.
+* **Hopefully** Added compatibility with Official GameCube Memory Cards (see this: http://devkitpro.svn.sourceforge.net/viewvc/devkitpro?view=revision&revision=4049). According to a friend of mine, it works with a 256 blocks Memory Card.
+* Compiled with DevKitPPC r24, libogc 1.8.8, libfat 1.0.10 and libFreetype 2.4.2.
 
 [What's New 1.0 - December 31, 2008]
 * Updated to libfat
@@ -45,9 +67,6 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ื—–ญ—–ญ—–ญ—–ญ –ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ— ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—-ญ—–ญ-–•ฌ
 |0Oื๘oท                          LIMITATIONS                          ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
-    Wii
-----------
-Currently only third party memory cards work due to some changes in wii mode still not handled by libogc.
 
     Protected Savegames
 --------------------------
@@ -117,9 +136,9 @@ They are shown at the screen.
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 Currently gcmm uses:
 
-*DevkitPPC r15: http://sourceforge.net/project/showfiles.php?group_id=114505&package_id=124208&release_id=306949
-*libOGC with Hermes patches: http://gcmm.googlecode.com/files/devkitPro_Wii_by_Hermes.rar
-*libfreetype 2.3.7 port by Tantric: http://www.tehskeen.com/forums/showthread.php?t=9404
+*DevkitPPC r24: http://sourceforge.net/projects/devkitpro/files/devkitPPC
+*libOGC r1.8.8: http://sourceforge.net/projects/devkitpro/files/libogc
+*libFreeType 2.4.2 port: http://sourceforge.net/projects/devkitpro/files/portlibs/ppc
 
 ื—–ญ—–ญ—–ญ—–ญ –ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ— ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—-ญ—–ญ-–•ฌ
 |0Oื๘oท                           CREDITS                             ทo๘ืO0|
