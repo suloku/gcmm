@@ -454,7 +454,11 @@ int main ()
 			if (have_sd) SD_RestoreMode();
 			else WaitPrompt("Reboot aplication with an SD card");
 			break;
-		case 500 :
+		case 500 ://exit
+			ShowAction ("exiting");
+			ShowAction ("exiting.");
+			ShowAction ("exiting..");
+			ShowAction ("exiting...");
 			deinitFAT();
 #ifdef HW_RVL
 			//if there's a loader stub load it, if not return to wii menu.

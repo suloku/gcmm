@@ -87,7 +87,9 @@ int MountCard(int cslot)
 	}
 	sprintf(msg, "%d blocks (%d sectorsize)", memsize, sectsize);
 	writeStatusBar("Card mounted",msg);
+	ShowScreen();	
 	sleep(1)
+	writeStatusBar("","");	
 	/*** If this point is reached, everything went fine ***/
 	return ret;
 }
