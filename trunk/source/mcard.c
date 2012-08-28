@@ -17,6 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "card.h"
 #include "mcard.h"
 #include "gci.h"
 #include "freetype.h"
@@ -296,10 +297,16 @@ int CardReadFileHeader (int slot, int id)
 	}
 
 	/*** Get card status info ***/
-	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
-	CARD_GetAttributes(slot,CardFile.filenum, &permission);
+//	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
+//	CARD_GetAttributes(slot,CardFile.filenum, &permission);
 
-	GCIMakeHeader();
+//	GCIMakeHeader();
+
+	//get directory entry (same as gci header, but with all the data)
+	memset(&gci,0,sizeof(GCI));
+	__card_getstatusex(slot,CardFile.filenum,&gci);
+	/*** Copy to head of buffer ***/
+	memcpy(FileBuffer, &gci, sizeof(GCI));
 
 	/*** Copy the file contents to the buffer ***/
 	filesize = CardFile.len;
@@ -440,10 +447,16 @@ int CardReadFile (int slot, int id)
 	}
 
 	/*** Get card status info ***/
-	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
-	CARD_GetAttributes(slot,CardFile.filenum, &permission);
+//	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
+//	CARD_GetAttributes(slot,CardFile.filenum, &permission);
 
-	GCIMakeHeader();
+//	GCIMakeHeader();
+
+	//get directory entry (same as gci header, but with all the data)
+	memset(&gci,0,sizeof(GCI));
+	__card_getstatusex(slot,CardFile.filenum,&gci);
+	/*** Copy to head of buffer ***/
+	memcpy(FileBuffer, &gci, sizeof(GCI));
 
 	/*** Copy the file contents to the buffer ***/
 	filesize = CardFile.len;
@@ -553,7 +566,8 @@ int CardWriteFile (int slot)
 	OFFSET = 0;
 
 	/*** Finally, update the status ***/
-	CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
+	//CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
+	__card_setstatusex(slot, CardFile.filenum, &gci);
 
 	//For some reason this sets the file to Move->allowed, Copy->not allowed, Public file instead of the actual permission value
 	//CARD_SetAttributes(slot, CardFile.filenum, &permission);

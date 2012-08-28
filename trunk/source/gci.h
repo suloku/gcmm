@@ -20,7 +20,7 @@ typedef struct {
 	u16 icon_speed;
 	u8 unknown1;	/*** Permission key ***/
 	u8 unknown2;	/*** Copy Counter ***/
-	u16 index;		/*** Ignore - and throw away ***/
+	u16 index;		/*** Start block of savegame in memory card (Ignore - and throw away) ***/
 	u16 filesize8;	/*** File size / 8192 ***/
 	u16 reserved02;	/*** Always 0xffff ***/
 	u32 comment_addr;
