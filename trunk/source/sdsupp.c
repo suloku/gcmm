@@ -33,12 +33,13 @@ extern int OFFSET;
 
 bool file_exists(const char * filename)
 {
-    if (FILE * file = fopen(filename, "r"))
-    {
-        fclose(file);
-        return true;
-    }
-    return false;
+	FILE * file = fopen(filename, "r");
+	if (file)
+	{
+		fclose(file);
+		return true;
+	}
+	return false;
 }
 
 int SDSaveMCImage ()
