@@ -117,7 +117,7 @@ Initialise (void)
 		// 576 lines (PAL 50Hz)
 		// display should be centered vertically (borders)
 		//Make all video modes the same size so menus doesn't screw up
-		vmode = &TVPal574IntDfScale;
+		vmode = &TVPal576IntDfScale;
 		vmode->xfbHeight = 480;
 		vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
 		vmode->viHeight = 480;

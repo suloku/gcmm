@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
 #include "mcard.h"
 #include "gci.h"
 #include "freetype.h"
@@ -65,7 +67,7 @@ int MountCard(int cslot)
 	char msg[64];
 
 	// Mount the card, try several times as they are tricky
-	while ( tries < 10 && ret !< 0)
+	while ( (tries < 10) && (ret < 0))
 	{
 		/*** We already initialized the Memory Card subsystem with CARD_Init() in select_memcard_slot(). Let's reset the
 		EXI subsystem, just to make sure we have no problems mounting the card ***/
@@ -73,13 +75,13 @@ int MountCard(int cslot)
 
 		/*** Mount the card ***/
 		ret = CARD_Mount (cslot, SysArea, card_removed);
-		if (ret !<0) break;
+		if (ret >= 0) break;
 		
 		VIDEO_WaitVSync ();
 		tries++;
 	}
 			/*** Make sure the card is really mounted ***/
-	isMounted = CARD_ProbeEx(cslot, memzise, sectsize);
+	isMounted = CARD_ProbeEx(cslot, &memsize, &sectsize);
 	if (memsize > 0 && sectsize > 0)//then we really mounted de card
 	{
 		/*** It was a false positive. Weird ***/
@@ -88,7 +90,7 @@ int MountCard(int cslot)
 	sprintf(msg, "%d blocks (%d sectorsize)", memsize, sectsize);
 	writeStatusBar("Card mounted",msg);
 	ShowScreen();	
-	sleep(1)
+	sleep(1);
 	writeStatusBar("","");	
 	/*** If this point is reached, everything went fine ***/
 	return ret;
