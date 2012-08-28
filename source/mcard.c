@@ -64,9 +64,9 @@ GCI gci;
 void card_removed(s32 chn,s32 result)
 {
 	if (chn == CARD_SLOTA)
-		writeStatusBar("Card was removed from slot A", "");
+		printf("Card was removed from slot A");
 	else
-		writeStatusBar("Card was removed from slot B", "");
+		printf("Card was removed from slot B");
 	CARD_Unmount(chn);
 }
 
@@ -103,14 +103,10 @@ int MountCard(int cslot)
 	isMounted = CARD_ProbeEx(cslot, &memsize, &sectsize);
 	if (memsize > 0 && sectsize > 0)//then we really mounted de card
 	{
-		sprintf(msg, "%d blocks (%d sectorsize)", memsize, sectsize);
-		writeStatusBar("Card mounted",msg);
-		ShowScreen();	
-		sleep(1);
-		writeStatusBar("","");	
 		return isMounted;
 	}
 	/*** If this point is reached, something went wrong ***/
+	
 	return ret;
 }
 

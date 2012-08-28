@@ -60,7 +60,7 @@ static int initFAT(int device)
 {
 	ShowAction("Mounting device...");
 #ifdef	HW_RVL
-	if (device){
+	if (device){//try SD card first
 		__io_wiisd.startup();
 		if (!__io_wiisd.isInserted())
 		{
@@ -77,9 +77,8 @@ static int initFAT(int device)
 				ShowAction("Error Mounting USB fat!");
 				sleep(1);
 				return 0;
-			}	
-		
-			return 0;
+			}
+			return 1;//usb mounted
 		}
 		if (!fatMountSimple ("fat", &__io_wiisd))
 		{
@@ -87,7 +86,7 @@ static int initFAT(int device)
 			sleep(1);
 			return 0;
 		}
-	}else if (!device)
+	}else if (!device)//try USB first
 	{
 		__io_usbstorage.startup();
 		if (!__io_usbstorage.isInserted())
@@ -105,9 +104,8 @@ static int initFAT(int device)
 				ShowAction("Error Mounting SD fat!");
 				sleep(1);
 				return 0;
-			}	
-		
-			return 0;
+			}
+			return 1;//SD mounted
 		}
 		if (!fatMountSimple ("fat", &__io_usbstorage))
 		{
@@ -120,6 +118,8 @@ static int initFAT(int device)
 	__io_gcsda.startup();
 	if (!__io_gcsda.isInserted())
 	{
+		ShowAction ("No SD Gecko inserted! Insert it in slot A please");
+		sleep(1);	
 		return 0;
 	}
 	if (!fatMountSimple ("fat", &__io_gcsda))
@@ -469,7 +469,7 @@ void SD_RestoreMode ()
 int main ()
 {
 
-	int have_sd;
+	int have_sd = 0;
 
 
 #ifdef HW_DOL
@@ -496,8 +496,12 @@ int main ()
 		mode = SelectMode ();
 #ifdef HW_RVL		
 		if (mode != 100 && mode != 500){
-			if (WaitPromptChoice ("Please select a memory card slot", "Slot B", "Slot A")){
+			if (WaitPromptChoice ("Please select a memory card slot", "Slot B", "Slot A") == 1)
+			{
 				MEM_CARD = CARD_SLOTA;
+			}else
+			{
+				MEM_CARD = CARD_SLOTB;
 			}
 		}
 #endif
@@ -521,10 +525,7 @@ int main ()
 			else WaitPrompt("Reboot aplication with an SD card");
 			break;
 		case 500 ://exit
-			ShowAction ("exiting");
-			ShowAction ("exiting.");
-			ShowAction ("exiting..");
-			ShowAction ("exiting...");
+			ShowAction ("Exiting...");
 			deinitFAT();
 #ifdef HW_RVL
 			//if there's a loader stub load it, if not return to wii menu.
