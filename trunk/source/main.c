@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/dir.h>
 #include <sys/time.h>
 #include <fat.h>
@@ -54,28 +55,78 @@ static void updatePAD()
 #endif
 }
 
-static int initFAT()
+// 1 for Internal SD, 0 for fat32 usb
+static int initFAT(int device)
 {
-
+	ShowAction("Mounting device...");
 #ifdef	HW_RVL
-	__io_wiisd.startup();
-	if (!__io_wiisd.isInserted())
+	if (device){
+		__io_wiisd.startup();
+		if (!__io_wiisd.isInserted())
+		{
+			ShowAction ("No SD card inserted! Trying USB storage.");
+			sleep(1);
+				__io_usbstorage.startup();
+			if (!__io_usbstorage.isInserted())
+			{
+				ShowAction ("No USB device inserted either!");
+				sleep(1);			
+				return 0;
+			}
+			else if (!fatMountSimple ("fat", &__io_usbstorage)){
+				ShowAction("Error Mounting USB fat!");
+				sleep(1);
+				return 0;
+			}	
+		
+			return 0;
+		}
+		if (!fatMountSimple ("fat", &__io_wiisd))
+		{
+			ShowAction("Error Mounting SD fat!");
+			sleep(1);
+			return 0;
+		}
+	}else if (!device)
 	{
-		return -1;
-	}
-	if (!fatMountSimple ("fat", &__io_wiisd))
-	{
-		return -1;
+		__io_usbstorage.startup();
+		if (!__io_usbstorage.isInserted())
+		{
+			ShowAction ("No usb device inserted! Trying internal SD.");
+			sleep(1);
+				__io_wiisd.startup();
+			if (!__io_wiisd.isInserted())
+			{
+				ShowAction ("No SD card inserted either!");
+				sleep(1);
+				return 0;
+			}
+			else if (!fatMountSimple ("fat", &__io_wiisd)){
+				ShowAction("Error Mounting SD fat!");
+				sleep(1);
+				return 0;
+			}	
+		
+			return 0;
+		}
+		if (!fatMountSimple ("fat", &__io_usbstorage))
+		{
+			ShowAction("Error Mounting USB fat!");
+			sleep(1);
+			return 0;
+		}	
 	}
 #else
 	__io_gcsda.startup();
 	if (!__io_gcsda.isInserted())
 	{
-		return -1;
+		return 0;
 	}
 	if (!fatMountSimple ("fat", &__io_gcsda))
 	{
-		return -1;
+		ShowAction("Error Mounting SD fat!");
+		sleep(1);
+		return 0;
 	}
 #endif
 	return 1;
@@ -88,6 +139,7 @@ void deinitFAT()
 	//...and then shutdown em!
 #ifdef	HW_RVL
 	__io_wiisd.shutdown();
+	__io_usbstorage.shutdown();
 #else
 	__io_gcsda.shutdown();
 #endif
@@ -427,10 +479,12 @@ int main ()
 
 	Initialise ();	/*** Start video ***/
 	FT_Init ();		/*** Start FreeType ***/
-	have_sd = initFAT();
 
 #ifdef HW_RVL
 	initialise_power();
+	have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT 32 USB device?", "USB", "SD"));
+#else
+	have_sd = initFAT(0);
 #endif
 
 
