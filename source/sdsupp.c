@@ -76,13 +76,13 @@ int SDSaveMCImage ()
 
 	mkdir(filename, S_IREAD | S_IWRITE);
 
-	sprintf (filename, "fat:/%s/%02d-%s-%s-%s.gci", MCSAVES, filenumber, company, gamecode,tfile);
+	sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, tfile, filenumber);
 	
 	//Lets try if there's already a savegame (if it exists its name is legal, so theoretically the illegal name check will pass
 	//Illegal savegame should report as nonexisting...
 	//We will number the files
 	while (file_exists(filename)){
-		sprintf (filename, "fat:/%s/%02d-%s-%s-%s.gci", MCSAVES, filenumber, company, gamecode,tfile);
+		sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, tfile, filenumber);
 		filenumber++;
 	}
 
@@ -96,11 +96,11 @@ int SDSaveMCImage ()
 		if (handle <= 0)
 		{
 			// couldn't open file, probably either card full or filename illegal; let's assume illegal filename and retry
-			sprintf(filename, "fat:/%s/%02d-%s-%s-%s.gci", MCSAVES, filenumber, company, gamecode, "illegal_name");
+			sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, "illegal_name", filenumber);
 			//let's see again if there aren't any saves already...
 			filenumber = 1;
 			while (file_exists(filename)){
-				sprintf (filename, "fat:/%s/%02d-%s-%s-%s.gci", MCSAVES, filenumber, company, gamecode, "illegal_name");
+				sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, "illegal_name", filenumber);
 				filenumber++;
 			}
 			//filename[128] = 0;
