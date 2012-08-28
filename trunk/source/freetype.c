@@ -11,6 +11,7 @@
 #include <string.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include "bannerload.h"
 #include "freetype.h"
 #include "gci.h"
 #include "mcard.h"
@@ -25,12 +26,21 @@
 #define FONT_SIZE 16 //pixels
 
 /*** Globals ***/
+bool offsetchanged = true;
 FT_Library ftlibrary;
 FT_Face face;
 FT_GlyphSlot slot;
 FT_UInt glyph_index;
+extern card_stat CardStatus;
 extern int cancel;
 extern int mode;
+extern int MEM_CARD;
+extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
+extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
+extern u8 icondata[1024] ATTRIBUTE_ALIGN (32);
+extern u16 icondataRGB[1024] ATTRIBUTE_ALIGN (32);
+extern u16 tlut[256] ATTRIBUTE_ALIGN (32);
+extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
 
 static int fonthi, fontlo;
 
@@ -53,7 +63,7 @@ extern GCI gci;
 extern u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
 extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 
-#define PAGESIZE 18
+#define PAGESIZE 16
 
 
 #ifdef HW_RVL
@@ -385,7 +395,7 @@ int SelectMode ()
 		}
 		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_2)
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_MINUS))
+			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_2))
 			{
 				VIDEO_WaitVSync ();
 			}
@@ -559,12 +569,12 @@ void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b)
 
 void showSaveInfo(int sel)
 {
-	int y = 160, x = 380, j;
+	int y = 160, x = 375, j;
 	char gamecode[5], company[3], txt[1024];
 
 	//clear right pane, but just the save info
 	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(375, 145, 605, 380, bgcolor);
+	DrawBoxFilled(375, 145, 605, 390, bgcolor);
 
 	// read file, display some more info
 	// TODO: only read the necessary header + comment, display banner and icon files
@@ -581,13 +591,28 @@ void showSaveInfo(int sel)
 	{
 		memcpy(company, CardList[sel].company, 2);
 		memcpy(gamecode, CardList[sel].gamecode, 4);
+		//null terminate gamecode and company
 		company[2] = gamecode[4] = 0;
-		j = CardReadFileHeader(CARD_SLOTB, sel);
+		j = CardReadFileHeader(MEM_CARD, sel);
 		// struct gci now contains header info
 
 	}
 
-
+	//Show icon and banner
+	if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_RGB) {
+		bannerloadRGB(bannerdata);
+	}
+	else if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_CI) {
+		bannerloadCI(bannerdataCI, tlutbanner);
+	}
+	if (gci.icon_fmt&0x01) {
+		iconloadCI(icondata, tlut);
+	}
+	else {
+		iconloadRGB(icondataRGB);
+	}
+    
+	/*** Display relevant info for this save ***/
 	sprintf(txt, "#%d %s/%s", sel, gamecode, company);
 	DrawText(x, y, txt);
 	y += 20;
@@ -619,6 +644,7 @@ void showSaveInfo(int sel)
 		// TODO: check if day<0, go back one month
 		day--;
 	}
+
 	// day now is number of days into the year
 	for(j=0; j<12; j++)
 	{
@@ -633,7 +659,7 @@ void showSaveInfo(int sel)
 		}
 	}
 
-	sprintf(txt, "Date: %s %02d, %04d", monthstr[month], day+1, year+2000);
+	sprintf(txt, "Date: %s %02d, %04d", monthstr[month], day, year+2000);
 	DrawText(x, y, txt);
 	y += 20;
 	sprintf(txt, "Time: %02d:%02d:%02d", hour, min, sec);
@@ -650,127 +676,129 @@ void showSaveInfo(int sel)
 	DrawText(x, y, txt);
 	y += 20;
 
-	//Bad way to display the file comment, should reposition to just show the full 32 char lines instead of spliting.
-	//For testing how many chars fit the screen (they might not be all upper case in savegames so...)
-	/*DrawText(x, y, "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF");
+	DrawText(x, y, "File Description:");
 	y += 20;
-	*/
-	//This relies in FONT_SIZE being 16 pixels
+
 	char comment1[26];
 	char comment2[6];
-
-	strncpy(comment1, (char*)CommentBuffer, 26);
+	
+	//We go ahead and print the full 32byte comment lines - could go offscreen
+	//but we like to live dangerously
+	for (j = 0; j < 32; j++) {
+		if ((char)CommentBuffer[j] == 0 || (char)CommentBuffer[j] == 10) {break;}
+		comment1[j] = (char)CommentBuffer[j];
+	}
+	comment1[j] = 0;
 	DrawText(x, y, comment1);
 	y += 20;
 	memset(comment1, 0, sizeof(comment1));
-
-	strncpy(comment2, (char*)CommentBuffer+26, 6);
+	
+	for (j = 32; j < 64; j++) {
+		if ((char)CommentBuffer[j] == 0 || (char)CommentBuffer[j] == 10) {break;}
+		comment2[j-32] = (char)CommentBuffer[j];
+	}
+	comment2[j-32] = 0;
 	DrawText(x, y, comment2);
 	y += 20;
 	memset(comment2, 0, sizeof(comment2));
+	
+	/*** Uncomment to print some debug info ***/
+	//y+=40;
+	//sprintf(comment2, "%x %x %x", gci.icon_addr, gci.icon_fmt, gci.banner_fmt);
+	//DrawText(x, y, comment2);
 
-	strncpy(comment1, (char*)CommentBuffer+32, 26);
-	DrawText(x, y, comment1);
-	y += 20;
-	memset(comment1, 0, sizeof(comment1));
-
-	strncpy(comment2, (char*)CommentBuffer+58, 6);
-	DrawText(x, y, comment2);
-	y += 20;
-	memset(comment2, 0, sizeof(comment2));
-
-	/* // Comment at MCDATAOFFSET+(comment addr)
-	 //char *comment = (char*) (FileBuffer+MCDATAOFFSET+gci.comment_addr);
-	 j = 0;
-	 int x2, z = 0;
-	 int offset = 0;
-	 for (x2=t=0; (t<strlen(comment)) && (t<64); t++) {
-	     z++;
-	     //x2 += font_size[(int)comment[t]];
-		x2 += 16;
-	     if (x2 > 225) { // max width of left pane
-	         strncpy(txt, comment+offset, z-1);
-	         txt[z-1] = 0;
-	         //char c = txt[t];
-	         //txt[t] = 0;
-	         DrawText(x, y, txt);
-	         y += 20;
-	         offset = t-1;
-	         //txt[t] = c;
-	         //strcpy(txt, comment+t);
-	         z = 0;
-	         //x2 = font_size[(int)comment[t]];
-			x2 = 16;
-	     }
-	 }
-
-	 if (z) {
-	     strcpy(txt, comment+offset);
-	     //txt[z] = 0;
-	     DrawText(x, y, txt);
-	     y += 20;
-	 }*/
 }
 
 
-static void ShowFiles (int offset, int selection)
-{
-	int i, j;
-	char text[80];
+static void ShowFiles (int offset, int selection, int upordown) {
+	int i, j;    //j helps us determine which entry to highlight
+	char text[23];
 	int ypos;
 	int w;
-
-	clearLeftPane();
-
-	//setfontsize (16);
-	setfontsize (14);
-	//ypos = 70;
-	ypos = (screenheight - (PAGESIZE * 20)) >> 1;
-	//ypos += 20;
-	ypos += 25;
-	j = 0;
-	for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); i++)
-	{
-		strcpy (text, (char*)filelist[i]);
-		if (j == (selection - offset))
-		{
-			/*** Highlighted text entry ***/
-			for (w = 0; w < 20; w++)
-			{
-				// DrawLineFast (30, 610, (j * 20) + (ypos - 16) + w, 0x00, 0x00, 0xC0);
-				//DrawLineFast (35, 330, (j * 20) + (ypos - 16) + w, 0xff, 0xff, 0xff);
-				DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, 0xff, 0xff, 0xff);
-
+	//If the filelist offset changed, we have to redraw every entry
+	//This tracks switching "pages" of files in the list
+	if (offsetchanged) {
+		//Must set this or we always redraw all files
+		offsetchanged = false;
+		//clear entire left side since we want to update all
+		clearLeftPane();
+		ShowScreen();
+		setfontsize (14);
+		setfontcolour (0xff, 0xff, 0xff);
+		//Do a little math (480 - (16*20+40))/2
+		//(ypos = 60 seems perfect given the current background bmp)
+		ypos = (screenheight - (PAGESIZE * 20+40)) >> 1;
+		ypos += 26;
+		j = 0;
+		for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); i++){
+			//changed this to limit characters shown in filename since display gets weird
+			//if we let the entire filename appear
+			strncpy (text, (char*)filelist[i], 22);
+			text[22] = 0;
+			if (j == (selection - offset)){
+				/*** Highlighted text entry ***/
+				for (w = 0; w < 20; w++){
+					//Draw white lines to highlight this area.
+					DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, 0xff, 0xff, 0xff);
+				}
+				setfontcolour (28, 28, 28);
+				DrawText (35, (j * 20) + ypos, text); 
+				setfontcolour (0xff, 0xff, 0xff);
 			}
-			//setfontcolour (0xff, 0xff, 0xff);
-			//setfontcolour (84, 174, 211);
-			setfontcolour (28, 28, 28);
-			// DrawText (-1, (j * 20) + ypos, text);
-			DrawText (35, (j * 20) + ypos, text);
-
-			showSaveInfo(selection);
-
-			setfontcolour (0xff, 0xff, 0xff);
-
-			//setfontcolour (0xc0, 0xc0, 0xc0);
-		}
-		else
-		{
-			/*** Normal entry ***/
-			//****************
-			for (w = 0; w < 20; w++)
-			{
-				// DrawLineFast (30, 610, (j * 20) + (ypos - 16) + w, 0x00, 0x00, 0xC0);
-
-				//DrawLineFast (35, 330, (j * 20) + (ypos - 16) + w, 84, 174,211);
-				DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, 84, 174,211);
+			else{
+				/*** Normal entry ***/
+				//****************
+				for (w = 0; w < 20; w++){
+					DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, 84, 174,211);
 				//***********************************************************
+				}
+				DrawText (35, (j * 20) + ypos, text);
 			}
-			DrawText (35, (j * 20) + ypos, text);
+			j++;
 		}
-		j++;
+		//set black font - info on right side of screen is printed in showSaveInfo
+		setfontcolour (28, 28, 28);
+		showSaveInfo(selection);
 	}
-	ShowScreen ();
+	else {
+		//Filelist offset didn't change yet; Only redraw what matters
+		setfontsize (14);
+		ypos = (screenheight - (PAGESIZE * 20+40)) >> 1;
+		ypos += 26;
+		setfontcolour (0xff, 0xff, 0xff);
+		//user just pressed up
+		if (upordown == 1) {
+			strncpy (text, (char*)filelist[selection+1], 22);
+			text[22] = 0;
+			for (w = 0; w < 20; w++){
+				DrawLineFast (35, 330, (((selection-offset)+1) * 20) + (ypos - 14) + w, 84, 174,211);
+			}
+			DrawText (35, (((selection-offset)+1) * 20) + ypos, text);
+		}
+		//user just pressed down
+		else if (upordown == 2) {
+			strncpy (text, (char*)filelist[selection-1], 22);
+			text[22] = 0;
+			for (w = 0; w < 20; w++){
+				DrawLineFast (35, 330, (((selection-offset)-1) * 20) + (ypos - 14) + w, 84, 174,211);
+			}
+			DrawText (35, (((selection-offset)-1) * 20) + ypos, text);
+		}
+		//Important to call ShowScreen here if we want the redraw to
+		//appear faster - without it the highlight box glides too much
+		ShowScreen();
+		setfontcolour (28, 28, 28);
+		strncpy (text, (char*)filelist[selection], 22);
+		text[22] = 0;
+		//the current spot is always highlighted
+		for (w = 0; w < 20; w++){
+			DrawLineFast (35, 330, ((selection-offset) * 20) + (ypos - 14) + w, 0xff, 0xff, 0xff);
+		}
+		DrawText (35, ((selection-offset) * 20) + ypos, text);
+		showSaveInfo(selection);
+	}
+	//Need this to show info update from showSaveInfo
+	ShowScreen();
 }
 
 /*void ShowFiles(int offset, int selected, int maxfiles) {
@@ -815,17 +843,17 @@ int ShowSelector ()
 #ifdef HW_RVL
 	u32 wp;
 #endif
-	int redraw = 1;
+	int upordown = 0; //pass this to ShowFiles
+	int redraw = 1; //determines need for screen update
 	int quit = 0;
-	int offset, selection;
-
-	offset = selection = 0;
+	int offset = 0;//further determines redraw conditions
+	int selection = 0;
 
 	while (quit == 0)
 	{
 		if (redraw)
 		{
-			ShowFiles (offset, selection);
+			ShowFiles (offset, selection, upordown);
 			redraw = 0;
 		}
 		p = PAD_ButtonsDown (0);
@@ -838,6 +866,7 @@ int ShowSelector ()
 #endif
 		   )
 		{
+			offsetchanged = true;
 			cancel = 1;
 			return -1;
 		}
@@ -862,14 +891,17 @@ int ShowSelector ()
 #endif
 		   )
 		{
+			upordown = 2;
 			selection++;
 			if (selection == maxfile)
 			{
 				selection = offset = 0;
+				offsetchanged = true;
 			}
 			if ((selection - offset) >= PAGESIZE)
 			{
 				offset += PAGESIZE;
+				offsetchanged = true;
 			}
 			redraw = 1;
 		}
@@ -879,15 +911,18 @@ int ShowSelector ()
 #endif
 		   )
 		{
+			upordown = 1;
 			selection--;
 			if (selection < 0)
 			{
 				selection = maxfile - 1;
 				offset = selection - PAGESIZE + 1;
+				offsetchanged = true;
 			}
 			if (selection < offset)
 			{
 				offset -= PAGESIZE;
+				offsetchanged = true;
 			}
 			if (offset < 0)
 			{
@@ -902,7 +937,7 @@ int ShowSelector ()
 void writeStatusBar( char *line1, char *line2)
 {
 	int bgcolor = getcolour(0xff,0xff,0xff);
-	DrawBoxFilled(10, 404, 510, 455, bgcolor);
+	DrawBoxFilled(10, 404, 610, 455, bgcolor);
 	//setfontcolour(84,174,211);
 	setfontcolour(28,28,28);
 	DrawText(40, 425, line1);
@@ -912,13 +947,13 @@ void writeStatusBar( char *line1, char *line2)
 void clearLeftPane()
 {
 	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(34, 110, 333, 380, bgcolor);
+	DrawBoxFilled(34, 110, 333, 392, bgcolor);
 }
 
 void clearRightPane()
 {
 	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(376, 112, 605, 380, bgcolor);
+	DrawBoxFilled(376, 112, 605, 390, bgcolor);
 }
 
 void DrawHLine (int x1, int x2, int y, int color)

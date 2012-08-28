@@ -40,7 +40,7 @@ u32 FLIP32(u32 value) {
 }
 
 u16 FLIP16(u16 value) {
-    return ((value & 0xff) << 8) | ((value & 0xff00) >> 8);
+    return ((value & 0x00ff) << 8) | ((value & 0xff00) >> 8);
 }
 
 /****************************************************************************
@@ -163,7 +163,87 @@ u32 ShowBMP(u8 * bmpfile) {
     return 1;
 }
 
+/*** 
+	ShowBanner is ShowBMP but modified to be simpler. We don't need to
+	check for a header since we generated the bmp BGR values directly for each save game.
+***/
+void ShowBanner(u8 *banner) {
+    u32 fbwidth, width, height;
+    u8 *bgr;
+    u32 fboffset;
+    u32 rows, cols;
 
+    width = CARD_BANNER_W;
+    height = CARD_BANNER_H;
+
+    bgr = banner;
+
+    fbwidth = width;
+    if (fbwidth & 1)
+        fbwidth++;
+
+    /*** Position banner on screen ***/
+    fboffset = ((640 - fbwidth) >> 1) >> 1;
+    fboffset += (((vmode->xfbHeight - height) >> 1) * 320);
+	fboffset += (height * 320);
+	fboffset += (height * 320);
+	fboffset += (height * 320);
+	fboffset += width/2+3; //at this point the banner is perfectly aligned with right window
+	fboffset += ((height *320)>>1)+3;
+	
+	fboffset += 24; //force banner to display to the right of icon
+	
+    for (rows = 0; rows < height; rows++) {
+        for (cols = 0; cols < (fbwidth >> 1); cols++) {
+            xfb[whichfb][fboffset + cols] =CvtRGB (bgr[2], bgr[1], bgr[0],
+                    bgr[5], bgr[4], bgr[3]);
+            bgr += 6;
+        }
+		/*
+			Go down a row here, unlike what was used in ShowBMP.
+			bannerload actually stores the image normally instead of
+			adhering to bottom-to-top format.
+		*/
+        fboffset += 320;
+
+    }
+}
+
+void ShowIcon(u8 *icon) {
+    u32 fbwidth, width, height;
+    u8 *bgr;
+    u32 fboffset;
+    u32 rows, cols;
+
+    width = CARD_BANNER_W;
+    height = CARD_ICON_H;
+
+    bgr = icon;
+
+    fbwidth = width;
+    if (fbwidth & 1)
+        fbwidth++;
+
+    /*** Position icon on screen ***/
+    fboffset = ((640 - fbwidth) >> 1) >> 1;
+	fbwidth = CARD_ICON_W;
+    fboffset += (((vmode->xfbHeight - height) >> 1) * 320);
+	fboffset += (height * 320);
+	fboffset += (height * 320);
+	fboffset += (height * 320);
+	fboffset += width/2+3;
+	fboffset += ((height *320)>>1)+3;
+	
+    for (rows = 0; rows < height; rows++) {
+        for (cols = 0; cols < (fbwidth >> 1); cols++) {
+            xfb[whichfb][fboffset + cols] =CvtRGB (bgr[2], bgr[1], bgr[0],
+                    bgr[5], bgr[4], bgr[3]);
+            bgr += 6;
+        }
+        fboffset += 320;
+
+    }
+}
 
 void ClearScreen() {
     ShowBMP(bitmapfile);

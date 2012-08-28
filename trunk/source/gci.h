@@ -15,7 +15,7 @@ typedef struct {
 	u8 banner_fmt;
 	u8 filename[CARD_FILENAMELEN];
 	u32 time;
-	u32 icon_addr;
+	u32 icon_addr;  /*** Offset to banner/icon data ***/
 	u16 icon_fmt;
 	u16 icon_speed;
 	u8 unknown1;	/*** Permission key ***/
