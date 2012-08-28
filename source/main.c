@@ -1,9 +1,10 @@
 /****************************************************************************
 * ds bomb gamecube memory card manager
-*based on libOGC Memory Card Backup by askot
+* based on libOGC Memory Card Backup by askot
 * delete support + saves information made by dsbomb
 * Gui original design by dsbomb
 * Gui adds and user interaction by justb
+* Banner/Icon display updates by Dronesplitter
 * Uses freetype.
 * libFreeType is available from the downloads sections.
 *****************************************************************************/
@@ -41,6 +42,9 @@ int screenheight;
 static int vmode_60hz = 0;
 
 extern u8 filelist[1024][1024];
+extern bool offsetchanged;
+
+int MEM_CARD = CARD_SLOTB;
 
 static void updatePAD()
 {
@@ -139,6 +143,7 @@ Initialise (void)
 #ifdef HW_DOL
 	/* we have component cables, but the preferred mode is interlaced
 	 * why don't we switch into progressive?
+	 * (user may not have progressive compatible display but component input)
 	 * on the Wii, the user can do this themselves on their Wii Settings */
 	if(VIDEO_HaveComponentCable())
 		vmode = &TVNtsc480Prog;
@@ -203,7 +208,7 @@ Initialise (void)
 /****************************************************************************
 * BackupMode -SD Mode
 *
-* Perform backup of a memory card file from a SD Card.
+* Perform backup of a memory card file to a SD Card.
 ****************************************************************************/
 void SD_BackupMode ()
 {
@@ -215,7 +220,7 @@ void SD_BackupMode ()
 	DrawText(390,130,"B a c k u p   M o d e");
 	writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup to SD Card ") ;
 	/*** Get the directory listing from the memory card ***/
-	memitems = CardGetDirectory (CARD_SLOTB);
+	memitems = CardGetDirectory (MEM_CARD);
 
 	/*** If it's a blank card, get out of here ***/
 	if (!memitems)
@@ -233,7 +238,7 @@ void SD_BackupMode ()
 		{
 			/*** Backup the file ***/
 			ShowAction ("Reading File From MC SLOT B");
-			bytestodo = CardReadFile (CARD_SLOTB, selected);
+			bytestodo = CardReadFile (MEM_CARD, selected);
 			if (bytestodo)
 			{
 				ShowAction ("Saving to SD CARD");
@@ -273,8 +278,9 @@ void SD_BackupModeAllFiles ()
 
 	clearRightPane();
 	DrawText(390,130," B a c k u p   A l l ");
-	writeStatusBar("Backing up all files.", "This may take a while.") ;
-	memitems = CardGetDirectory (CARD_SLOTB);
+	writeStatusBar("Backing up all files.", "This may take a while.");
+	/*** Get the directory listing from the memory card ***/
+	memitems = CardGetDirectory (MEM_CARD);
 
 	/*** If it's a blank card, get out of here ***/
 	if (!memitems)
@@ -287,7 +293,7 @@ void SD_BackupModeAllFiles ()
 			/*** Backup files ***/
 			sprintf(buffer, "[%d/%d] Reading from MC slot B", selected+1, memitems);
 			ShowAction(buffer);
-			bytestodo = CardReadFile(CARD_SLOTB, selected);
+			bytestodo = CardReadFile(MEM_CARD, selected);
 			if (bytestodo)
 			{
 				sprintf(buffer, "[%d/%d] Saving to SD card", selected+1, memitems);
@@ -340,7 +346,7 @@ void SD_RestoreMode ()
 			if (SDLoadMCImage ((char*)filelist[selected]))
 			{
 				ShowAction ("Updating Memory Card");
-				if (CardWriteFile (CARD_SLOTB))
+				if (CardWriteFile (MEM_CARD))
 				{
 					WaitPrompt ("Restore Complete");
 				}
@@ -377,7 +383,7 @@ void SD_RestoreMode ()
 
 
   ShowAction ("Reading From MC SLOT B");
-  bytestodo = testreadimage (CARD_SLOTB);
+  bytestodo = testreadimage (MEM_CARD);
   if (bytestodo){
      ShowAction ("Saving to SD CARD");
      if (SDSaveraw ()){
@@ -434,23 +440,29 @@ int main ()
 		ClearScreen();
 		cancel = 0;/******a global value to track action aborted by user pressing button B********/
 		mode = SelectMode ();
-
+#ifdef HW_RVL		
+		if (mode != 100 && mode != 500){
+			if (WaitPromptChoice ("Please select a memory card slot", "Slot B", "Slot A")){
+				MEM_CARD = CARD_SLOTA;
+			}
+		}
+#endif
 
 		/*** Mode == 100 for backup, 200 for restore ***/
 		switch (mode)
 		{
-		case 100 :
+		case 100 : //User pressed A so keep looping
 			//SMB_BackupMode();
 			//WaitPrompt ("Inactive");
 			break;
-		case 200 :
-			MC_DeleteMode(CARD_SLOTB);
+		case 200 : //User wants to delete
+			MC_DeleteMode(MEM_CARD);
 			break;
-		case 300 :
+		case 300 : //User wants to backup
 			if (have_sd) SD_BackupMode();
 			else WaitPrompt("Reboot aplication with an SD card");
 			break;
-		case 400 :
+		case 400 : //User wants to restore
 			if (have_sd) SD_RestoreMode();
 			else WaitPrompt("Reboot aplication with an SD card");
 			break;
@@ -469,11 +481,13 @@ int main ()
 			else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #endif
 			break; //PSO_Reload
-		case 600 : // GC R / Wii 1
+		case 600 : //User wants to backup full card
 			if (have_sd) SD_BackupModeAllFiles();
 			else WaitPrompt("Reboot aplication with an SD card");
 			break;
 		}
+		
+		offsetchanged = true;
 	}
 	while (1);
 	return 0;

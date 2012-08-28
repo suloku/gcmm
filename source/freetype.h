@@ -4,6 +4,8 @@
 #ifndef _FTFONTS_
 #define _FTFONTS_
 
+#define MCDATAOFFSET 64
+#define FONT_SIZE 16 //pixels
 //#define PRESSED_BUTTON_A 100 /* Free mode */
 #define DELETE_MODE 200
 #define BACKUP_MODE 300
