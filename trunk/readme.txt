@@ -15,22 +15,31 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 * Backups and restores savegames into GCI format
 * Restores savegames in GCS/SAV format
-* Deletes savegames from slot B memory card
+* Deletes savegames from memory card
 * Wiimote and GameCube controller support
 * Power button support
-* Front SD (wii) and SDGecko (gc) support
-* A nice UI
+* Front SD and FAT32 USB device (wii) and SDGecko (gamecube) support
+* Shows savegame information, alongside Icon and Banner!
+* A (somewhat) nice UI
 * Open Source!
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
-Accepted PlabloACZ and Picachu025 modifications, with the following changes:
+[What's New 1.1 - august 29, 2012 - By suloku]
 
-*tweaked mount function
-*Filenames are no longer prefixed with a number for current sesion. Instead, when backing up a savegame if the same file exists on SD it will be prefixed with a growing number (if 00-savegame.gci exists, then it will try 01-savegame.gci, 02-savegame.gci... and so on)
-*Infinite loop won't happen when backupping a savegame
+* Icon and banner by dronesplitter!
+* Added USB-SD selection in wiimode (only at boot)
+* Added card slot selection (wii mode only)
+* Propper GCI backup and restore. Now GCMM uses __card_getstatusex and __card_setstatuex, which provide a more 1:1 backup/restore
+* Correctly displaying savegame Date information
+* Savegame information rearranged.
+
+Accepted PlabloACZ and Picachu025 modifications, with the following changes:
+* Tweaked mount function
+* Filenames are no longer prefixed with a number for current sesion. Instead, savegames are suffixed with a number. When backing up a savegame if the same file exists on SD it will be prefixed with a growing number (if savegame_00.gci exists, then it will try savegame_01.gci, savegame_02.gci... and so on)
+* Infinite loop can't happen when backupping a savegame as in r11 MOD 2.
 
 [What's New r11 MOD 2 - September 11, 2011 - By Pikachu025]
 * R (GC-Pad) / 1 (Wiimote) now launches a "backup all" mode, where all saves on the memory card are written to the SD card without any user prompts in the meantime.
@@ -58,9 +67,8 @@ Accepted PlabloACZ and Picachu025 modifications, with the following changes:
 * Many other fixes/modifications for the user
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                                 TO DO                         ·oø×O0|
+|0O×øo·                             TO DO                             ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-* Add icon and banner display for the savegames
 * Add raw image read and write support
 * Add hotswapping
 
@@ -76,15 +84,36 @@ Protected savegames rely on the serial ID that is given to the memory card when 
 
 Restoring a raw image to a diferent card has still to be tested to see if that will permit using a protected gamesave on another memory card.
 
+Known protected savegames:
+* F-zero GX
+* Phantasy Star Online (all of the games)
+
     Other savegame formats
 ----------------------------
-There are computer programs that can transform other savegame formats into GCI.
+There are computer programs that can transform other savegame formats into GCI (currently GCMM supports SAV and GCS restoring).
 
 GCP format is a raw savegame image of the memory card. At the moment creating a raw image is possible thanks to Masken, but there are still problems when restoring.
 
+MCI format (createad by softdev's sdmc) is a raw image of the card, preceded by a 64 byte header.
+
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                         SETUP & INSTALLATION                  ·oø×O0|
+|0O×øo·                        CONSIDERATIONS                         ·oø×O0|
+`¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+Users:
+* If you extract a device (USB, internal SD, USB gecko), it won't work againt. If you did so, reboot the GCMM. On the contrary
+* Memory cards can be extracted/inserted at will at the main menu screen. It is not recommended to change the card in any other screen.
+* Dolphin (wii/gc computer emulator) has a nice memory card manager, check it out!
+
+Developers:
+
+* LibOGC card functions works with time functions that use Epoch (seconds since jan 1, 1970) as reference, while GameCube works with seconds since jan 1, 2000). The difference is 946684800 seconds
+* GCMM now uses libogc 1.8.11 git (2012-07-25) card.c, card.h and system.h with tueidj's patches for proper memory card unlocking. It would be wise to update those files in GCMM if changes are made to libogc concerning other functions. Note that even if libogc asumes the changes, as GCMM now uses some static functions from libogc, it needs card.c and card.h, but if libogc updates the sramex structure (system.h) and fixes the checksums in card.c, system.h will no longer be needed.
+* Very good sources of documentation are libogc and dolphin's source code.
+
+×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
+|0O×øo·                     SETUP & INSTALLATION                      ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
 Unzip the archive. You will find the following folders inside:
@@ -97,8 +126,10 @@ gamecube		Contains GameCube DOL file (not required for Wii)
 
     Wii
 ----------
-On the Wii, the savegames will be read from and written to the front SD slot.
-Memory card should be in slot B.
+On the Wii, the savegames will be read from and written to the front SD slot or FAT32 USB device.
+The user will be prompted at startup for which device to use.
+If the selected device isn't available, GCMM will try to use the other device (i.e: user selects usb device but there's none connected, so GCMM will try to use the internal SD).
+Memory card can be in either slot.
 
 
   Gamecube
@@ -111,9 +142,7 @@ Loading / Running the app:
 
 Wii - Via Homebrew Channel:
 --------------------
-The most popular method of running homebrew on the Wii is through the Homebrew
-Channel. If you already have the channel installed, just copy over the apps folder
-included in the archive into the root of your SD card.
+The most popular method of running homebrew on the Wii is through the Homebrew Channel. If you already have the channel installed, just copy over the apps folder included in the archive into the root of your SD card.
 
 If you haven't installed the Homebrew Channel yet, read about how to here:
 http://hbc.hackmii.com/
@@ -122,8 +151,7 @@ Gamecube:
 ---------
 You can load gcmm via sdload and an SD card in slot A, or by streaming 
 it to your Gamecube, or by booting a bootable DVD with gcmm on it. 
-This document doesn't cover how to do any of that. A good source for information 
-on these topics is the tehskeen forums: http://www.tehskeen.com/forums/
+This document doesn't cover how to do any of that. A good source for information on these topics is at http://www.gc-forever.com/wiki/index.php?title=Booting_Homebrew
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                          CONTROLS                             ·oø×O0|
@@ -132,13 +160,14 @@ on these topics is the tehskeen forums: http://www.tehskeen.com/forums/
 They are shown at the screen.
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                           COMPILING                           ·oø×O0|
+|0O×øo·                          COMPILING                            ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 Currently gcmm uses:
 
-*DevkitPPC r24: http://sourceforge.net/projects/devkitpro/files/devkitPPC
-*libOGC r1.8.8: http://sourceforge.net/projects/devkitpro/files/libogc
-*libFreeType 2.4.2 port: http://sourceforge.net/projects/devkitpro/files/portlibs/ppc
+*DevkitPPC r26: http://sourceforge.net/projects/devkitpro/files/devkitPPC/
+*libOGC 1.8.11 git (2012-07-25): http://sourceforge.net/projects/devkitpro/files/libogc
+*libfat 1.0.11: http://sourceforge.net/projects/devkitpro/files/libfat/
+*libFreeType 2.4.2 port: http://sourceforge.net/projects/devkitpro/files/portlibs/ppc/
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                           CREDITS                             ·oø×O0|
@@ -150,6 +179,10 @@ Currently gcmm uses:
 *Justb & dsbomb for originally creating gcmm
 *CowTRobo & Samsom for very useful old sources
 *Tantric for pointing out that official memory cards won't work on wii mode, which encouraged me to continue gcmm as all my previous efforts where in vane due to using an official card for the testing.
+*tueidj, for his patches and very useful information and support.
+*dronesplitter for banner and icon implementation
+*PlabloACZ and Picachu025 for updating the source.
+*Nano, for inspiring me to finally working again on GCMM
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                                                               ·oø×O0|
