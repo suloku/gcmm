@@ -22,6 +22,13 @@
 #include "gci.h"
 #include "freetype.h"
 
+// If STATUSOGC defined uses CARD_GetStatus and CARD_SetStatus
+// Default (undefined) uses __card_getstatusex and __card_setstatusex
+// Diference: when restoring a savegame with the ex functions original time, copy counter, etc are preserved
+// Also, libogc creates card entries with time since 1970 and gamecube uses time since 2000... thus libogc adds 30 years!
+
+//#define STATUSOGC
+
 /*** Memory Card Work Area ***/
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN (32);
 
@@ -296,17 +303,19 @@ int CardReadFileHeader (int slot, int id)
 		return 0;
 	}
 
+#ifdef STATUSOGC
 	/*** Get card status info ***/
-//	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
-//	CARD_GetAttributes(slot,CardFile.filenum, &permission);
+	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
+	CARD_GetAttributes(slot,CardFile.filenum, &permission);
 
-//	GCIMakeHeader();
-
+	GCIMakeHeader();
+#else
 	//get directory entry (same as gci header, but with all the data)
 	memset(&gci,0,sizeof(GCI));
 	__card_getstatusex(slot,CardFile.filenum,&gci);
 	/*** Copy to head of buffer ***/
 	memcpy(FileBuffer, &gci, sizeof(GCI));
+#endif
 
 	/*** Copy the file contents to the buffer ***/
 	filesize = CardFile.len;
@@ -382,7 +391,7 @@ int CardReadFileHeader (int slot, int id)
 	}
 
 	/*** Get the comment (two 32 byte strings) into buffer ***/
-	memcpy(CommentBuffer, FileBuffer + MCDATAOFFSET + CardStatus.comment_addr, 64);
+	memcpy(CommentBuffer, FileBuffer + MCDATAOFFSET + gci.comment_addr, 64);
 
 	/*** Close the file ***/
 	CARD_Close (&CardFile);
@@ -446,17 +455,19 @@ int CardReadFile (int slot, int id)
 		return 0;
 	}
 
+#ifdef STATUSOGC
 	/*** Get card status info ***/
-//	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
-//	CARD_GetAttributes(slot,CardFile.filenum, &permission);
+	CARD_GetStatus (slot, CardFile.filenum, &CardStatus);
+	CARD_GetAttributes(slot,CardFile.filenum, &permission);
 
-//	GCIMakeHeader();
-
+	GCIMakeHeader();
+#else
 	//get directory entry (same as gci header, but with all the data)
 	memset(&gci,0,sizeof(GCI));
 	__card_getstatusex(slot,CardFile.filenum,&gci);
 	/*** Copy to head of buffer ***/
 	memcpy(FileBuffer, &gci, sizeof(GCI));
+#endif
 
 	/*** Copy the file contents to the buffer ***/
 	filesize = CardFile.len;
@@ -565,9 +576,12 @@ int CardWriteFile (int slot)
 
 	OFFSET = 0;
 
+#ifdef STATUSOGC
 	/*** Finally, update the status ***/
-	//CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
+	CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
+#else
 	__card_setstatusex(slot, CardFile.filenum, &gci);
+#endif
 
 	//For some reason this sets the file to Move->allowed, Copy->not allowed, Public file instead of the actual permission value
 	//CARD_SetAttributes(slot, CardFile.filenum, &permission);

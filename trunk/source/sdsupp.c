@@ -377,7 +377,10 @@ int SDLoadMCImageHeader(char *sdfilename)
 	}
 
 	ExtractGCIHeader();
-	GCIMakeHeader();
+//	GCIMakeHeader();
+	//Let's get the full header as is, instead of populating it...
+	memset(&gci, 0xff, sizeof(GCI)); /*** Clear out the cgi header ***/
+	memcpy (&gci, FileBuffer, sizeof (GCI));
 
 	//Find how many icons are present
 	numicons = 8;
