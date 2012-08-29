@@ -615,69 +615,10 @@ void showSaveInfo(int sel)
 	/*** Display relevant info for this save ***/
 	sprintf(txt, "#%d %s/%s", sel, gamecode, company);
 	DrawText(x, y, txt);
-	y += 20;
+	y += 60;
 
-	// Compute date/time
-	u32 t = gci.time;  // seconds since jan 1, 2000
-	int month, day, year, hour, min, sec;
-	month = day = year = hour = min = sec = 0;
-	sprintf(txt, "D: %08X", t);
-	DrawText(x, y, txt);
-	y += 20;
-
-	int monthdays[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-	char monthstr[12][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
-	                         "Aug", "Sep", "Oct", "Nov", "Dec"
-	                       };
-	sec = t % 60;
-	t /= 60;
-	min = t % 60;
-	t /= 60;
-	hour = t % 24;
-	t /= 24;
-	day = t % 365;
-	year = t / 365;
-	// figure in leap years
-	day -= year / 4;
-	if ( (year % 4 == 0) && (day > 31+29) )
-	{
-		// TODO: check if day<0, go back one month
-		day--;
-	}
-
-	// day now is number of days into the year
-	for(j=0; j<12; j++)
-	{
-		if (day > monthdays[j])
-		{
-			month++;
-			day -= monthdays[j];
-		}
-		else
-		{
-			j = 12;
-		}
-	}
-
-	sprintf(txt, "Date: %s %02d, %04d", monthstr[month], day, year+2000);
-	DrawText(x, y, txt);
-	y += 20;
-	sprintf(txt, "Time: %02d:%02d:%02d", hour, min, sec);
-	DrawText(x, y, txt);
-	y += 20;
-	sprintf(txt, "Blocks: %d", gci.filesize8);
-	DrawText(x, y, txt);
-	y += 20;
-	//M-> Cant' move the file //C->can't copy the file //P->public file //Most frecuent: xxP
-	sprintf(txt, "Perm: %s%s%s",
-	        (gci.unknown1 & 16) ? "M " : "x",
-	        (gci.unknown1 & 8) ? "C " : "x",
-	        (gci.unknown1 & 4) ? "P" : "x");
-	DrawText(x, y, txt);
-	y += 20;
-
-	DrawText(x, y, "File Description:");
-	y += 20;
+	//DrawText(x, y, "File Description:");
+	//y += 20;
 
 	char comment1[26];
 	char comment2[6];
@@ -701,7 +642,71 @@ void showSaveInfo(int sel)
 	DrawText(x, y, comment2);
 	y += 20;
 	memset(comment2, 0, sizeof(comment2));
-	
+	y += 20;
+
+	// Compute date/time
+	u32 t = gci.time;  // seconds since jan 1, 2000
+	/*
+	//Raw time display
+	sprintf(txt, "D: %08X", t);
+	DrawText(x, y, txt);	
+	y += 20;
+	*/
+
+	t += 946684800;	//let's add seconds since Epoch (jan 1, 1970 to jan 1,2000)
+	int month, day, year, hour, min, sec;
+	month = day = year = hour = min = sec = 0;
+	char monthstr[12][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+	                         "Aug", "Sep", "Oct", "Nov", "Dec"
+	                       };
+
+	// Taken from void SecondsToDate(int seconds, int *pYear, int *pMonth, int *pDay)
+	// Calculates year month and day since jan 1, 1970 from (t) seconds
+	// Reference: Fliegel, H. F. and van Flandern, T. C. (1968).
+	// Communications of the ACM, Vol. 11, No. 10 (October, 1968).
+	// Original code in Fortran
+		int I, J, K, L, N;
+
+		L = t / 86400 + 2509157;
+		N = 4 * L / 146097;
+		L = L - (146097 * N + 3) / 4;
+		I = 4000 * (L + 1) / 1461001;
+		L = L - 1461 * I / 4 + 31;
+		J = 80 * L / 2447;
+		K = L - 2447 * J / 80;
+		L = J / 11;
+		J = J + 2 - 12 * L;
+		I = 100 * (N - 49) + I + L;
+		year = I;
+		month = J;
+		day = K;
+		
+	sec = t % 60;
+	t /= 60;
+	min = t % 60;
+	t /= 60;
+	hour = t % 24;
+
+	sprintf(txt, "Date: %s %02d, %04d", monthstr[month-1], day, year);
+	DrawText(x, y, txt);
+	y += 20;
+	sprintf(txt, "Time: %02d:%02d:%02d", hour, min, sec);
+	DrawText(x, y, txt);
+	y += 20;
+	sprintf(txt, "Blocks: %d", gci.filesize8);
+	DrawText(x, y, txt);
+	y += 20;
+	//M-> Cant' move the file //C->can't copy the file //P->public file //Most frecuent: xxP
+	sprintf(txt, "Perm: %s%s%s",
+	        (gci.unknown1 & 16) ? "M " : "x ",
+	        (gci.unknown1 & 8) ? "C " : "x ",
+	        (gci.unknown1 & 4) ? "P" : "x");
+	DrawText(x, y, txt);
+	y += 20;
+	sprintf(txt, "Copy Count: %02d", gci.unknown2);
+	DrawText(x, y, txt);
+	//y += 20;
+
 	/*** Uncomment to print some debug info ***/
 	//y+=40;
 	//sprintf(comment2, "%x %x %x", gci.icon_addr, gci.icon_fmt, gci.banner_fmt);

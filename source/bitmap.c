@@ -185,13 +185,13 @@ void ShowBanner(u8 *banner) {
     /*** Position banner on screen ***/
     fboffset = ((640 - fbwidth) >> 1) >> 1;
     fboffset += (((vmode->xfbHeight - height) >> 1) * 320);
-	fboffset += (height * 320);
-	fboffset += (height * 320);
-	fboffset += (height * 320);
+	fboffset -= (height * 320 * 2);
+	fboffset -= (height * 90);
 	fboffset += width/2+3; //at this point the banner is perfectly aligned with right window
 	fboffset += ((height *320)>>1)+3;
 	
-	fboffset += 24; //force banner to display to the right of icon
+	//fboffset += 24; //force banner to display to the right of icon
+	fboffset += 44; //force banner to display to the right of icon
 	
     for (rows = 0; rows < height; rows++) {
         for (cols = 0; cols < (fbwidth >> 1); cols++) {
@@ -228,11 +228,12 @@ void ShowIcon(u8 *icon) {
     fboffset = ((640 - fbwidth) >> 1) >> 1;
 	fbwidth = CARD_ICON_W;
     fboffset += (((vmode->xfbHeight - height) >> 1) * 320);
-	fboffset += (height * 320);
-	fboffset += (height * 320);
-	fboffset += (height * 320);
+	fboffset -= (height * 320 * 2);
+	fboffset -= (height * 90);
 	fboffset += width/2+3;
 	fboffset += ((height *320)>>1)+3;
+	
+	fboffset += 20; //center icon
 	
     for (rows = 0; rows < height; rows++) {
         for (cols = 0; cols < (fbwidth >> 1); cols++) {
