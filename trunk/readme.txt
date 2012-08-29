@@ -166,6 +166,7 @@ Currently gcmm uses:
 
 *DevkitPPC r26: http://sourceforge.net/projects/devkitpro/files/devkitPPC/
 *libOGC 1.8.11 git (2012-07-25): http://sourceforge.net/projects/devkitpro/files/libogc
+	note: it compiles and runs fine with 1.8.11 release
 *libfat 1.0.11: http://sourceforge.net/projects/devkitpro/files/libfat/
 *libFreeType 2.4.2 port: http://sourceforge.net/projects/devkitpro/files/portlibs/ppc/
 
