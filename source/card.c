@@ -186,7 +186,7 @@ static s32 __card_updatefat(s32 chn,struct card_bat *fatblock,cardcallback callb
 static s32 __card_updatedir(s32 chn,cardcallback callback);
  s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
 static s32 __card_writepage(s32 chn,cardcallback callback);
-static s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
+s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
 static s32 __card_onreset(s32 final);
 
 static sys_resetinfo card_resetinfo = {
@@ -1680,7 +1680,7 @@ static s32 __card_formatregion(s32 chn,u32 encode,cardcallback callback)
 	return ret;
 }
 
-static s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback)
+s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback)
 {
 	s32 ret;
 	card_block *card = NULL;

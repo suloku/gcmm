@@ -18,6 +18,8 @@
 
 u8 *CardBuffer = 0;
 s8 read_data = 0;
+s8 write_data = 0;
+s8 erase_data = 0;
 Header cardheader;
 
 extern syssram* __SYS_LockSram();
@@ -65,7 +67,11 @@ void _read_callback(s32 chn,s32 result)
 }
 void _write_callback(s32 chn,s32 result)
 {
-	read_data =1;
+	write_data =1;
+}
+void _erase_callback(s32 chn,s32 result)
+{
+	erase_data =1;
 }
 
 //output is 29 char long
@@ -174,7 +180,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	{
 		read_data = 0;
 		//printf("\rReading : %u bytes of %u (block %d)...",read,BlockCount*SectorSize,current_block);
-		sprintf(msg, "Reading : %u bytes of %u (block %d)...",read,BlockCount*SectorSize,current_block);
+		sprintf(msg, "Reading... : Block %d of %d (%u bytes of %u)",current_block,BlockCount,read,BlockCount*SectorSize);
 		writeStatusBar(msg, "");
 		if( (err != 0) || current_block >= BlockCount)
 			break;
@@ -220,9 +226,6 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 	s32 BlockCount = 0;
 	s32 current_block = 0;
 	s32 writen = 0;	
-
-	CARD_Init(NULL,NULL);
-	EXI_ProbeReset();
 	
 	err = MountCard(slot);
 	if (err < 0)
@@ -319,23 +322,45 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 			ShowAction ("Writing data to memory card...");
 			s32 upblock = 0;
 			s32 write_len = SectorSize;
-			//s32 write_len = 0x80;//pagesize o memory card
+			//s32 write_len = 0x80;//pagesize of memory card
 			while( 1 )
 			{
 				//printf("\rWriting... : %d of %d (block %d)",writen,BlockCount*SectorSize,current_block);
-				sprintf(msg, "Writing... : Block %d (%d of %d)",current_block, writen,BlockCount*SectorSize);
+				sprintf(msg, "Writing... : Block %d of %d (%d of %d)",current_block,BlockCount,writen,BlockCount*SectorSize);
 				ShowAction (msg);
 				//gprintf("\rWriting... : %d of %d (block %d of %d)",writen,BlockCount*SectorSize,current_block,BlockCount);
-				read_data = 0;
+				write_data = 0;
+				erase_data = 0;
 				if( (err != 0) || current_block >= BlockCount || writen == BlockCount*SectorSize)
 					break;
+				
+				DCStoreRange(CardBuffer+writen,write_len);
+				if(writen == 0 || !(writen%SectorSize)){
+					//s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
+					err = __card_sectorerase(slot,writen, _erase_callback);
+					if(err == 0)
+					{
+						while(erase_data == 0)
+							usleep(1*1000); //sleep untill the erase is done which sadly takes alot longer then read
+						__card_sync(slot);
+					}else
+					{
+						fclose(dumpFd);
+						free(CardBuffer);
+						//printf("\nerror writing data(%d) Memory card could be corrupt now!!!\n",err);
+						sprintf(msg, "error erasing sector(%d) Memory card could be corrupt now!!!",err);
+						WaitPrompt (msg);
+						return -1;
+					}
+				}
 				//s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback)
-				err = __card_write(slot,writen,write_len,CardBuffer+writen,_read_callback);
+				err = __card_write(slot,writen,write_len,CardBuffer+writen,_write_callback);
 				if(err == 0)
 				{
-					while(read_data == 0)
+					while(write_data == 0)
 						usleep(1*1000); //sleep untill the write is done which sadly takes alot longer then read
 					__card_sync(slot);
+
 
 					writen = writen + write_len;
 					upblock=upblock+write_len;
