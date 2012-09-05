@@ -8,6 +8,13 @@
 
 #include <gccore.h>
 
+// If STATUSOGC defined uses CARD_GetStatus and CARD_SetStatus
+// Default (undefined) uses __card_getstatusex and __card_setstatusex
+// Diference: when restoring a savegame with the ex functions original time, copy counter, etc are preserved
+// Also, libogc creates card entries with time since 1970 and gamecube uses time since 2000... thus libogc adds 30 years!
+
+//#define STATUSOGC
+
 typedef struct {
 	u8 gamecode[4];
 	u8 company[2];

@@ -28,6 +28,8 @@
 #endif
 
 #include "mcard.h"
+#include "card.h"
+#include "raw.h"
 #include "sdsupp.h"
 #include "freetype.h"
 #include "bitmap.h"
@@ -45,7 +47,9 @@ static int vmode_60hz = 0;
 extern u8 filelist[1024][1024];
 extern bool offsetchanged;
 
-int MEM_CARD = CARD_SLOTB;
+s32 MEM_CARD = CARD_SLOTB;
+extern syssramex *sramex;
+extern u8 imageserial[12];
 
 static void updatePAD()
 {
@@ -281,7 +285,7 @@ void SD_BackupMode ()
 	}
 	else
 	{
-		selected = ShowSelector ();
+		selected = ShowSelector (1);
 		if (cancel)
 		{
 			WaitPrompt ("Backup action cancelled!");
@@ -378,7 +382,7 @@ void SD_RestoreMode ()
 	clearRightPane();
 	DrawText(390,130,"R e s t o r e   M o d e");
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
-	files = SDGetFileList ();
+	files = SDGetFileList (1);
 	if (!files)
 	{
 		WaitPrompt ("No saved games in SD Card to restore !");
@@ -386,7 +390,7 @@ void SD_RestoreMode ()
 
 	else
 	{
-		selected = ShowSelector ();
+		selected = ShowSelector (1);
 
 		if (cancel)
 		{
@@ -413,56 +417,87 @@ void SD_RestoreMode ()
 			}
 		}
 
-
-
 	}
 
 }
 
 /****************************************************************************
-* TestMode
+* RawBackupMode -SD Mode
 *
-*
+* Perform backup of full memory card (in raw format) to a SD Card.
 ****************************************************************************/
-/*void testMode (){
+void SD_RawBackupMode ()
+{
+	s32 writen = 0;
+	char msg[64];
+	clearRightPane();
+	DrawText(50, 230, "R A W   B a c k u p   M o d e");
+	writeStatusBar("Reading memory card... ", "");
 
- clearRightPane();
- DrawText(390,130,"T e s t   M o d e");
+	if (BackupRawImage(MEM_CARD, &writen) == 1)
+	{
+		sprintf(msg, "Backup complete! Wrote %d bytes to SD",writen);
+		WaitPrompt(msg);
+	}else{
+		
+		WaitPrompt("Backup failed!");
+	}
 
-  int bytestodo;
-
-  clearRightPane();
-
-
-  ShowAction ("Reading From MC SLOT B");
-  bytestodo = testreadimage (MEM_CARD);
-  if (bytestodo){
-     ShowAction ("Saving to SD CARD");
-     if (SDSaveraw ()){
-	    WaitPrompt ("Backup complete");
-     }
-     else{
-	     WaitPrompt ("Backup failed");
-      }
-  }
-  else{
-       WaitPrompt ("Error reading MC file");
-  }
-
-// writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
-
-
-//WaitPrompt ("No saved games in SD Card to restore !");
-//ShowAction ("Reading from SD Card");
-
-
-}*/
-
-/* Reboot the system */
-/*void Reboot() {
-    *((volatile u32*)0xCC003024) = 0x00000000;
 }
-*/
+
+/****************************************************************************
+* RawRestoreMode
+*
+* Restore a full raw backup to Memory Card from SD Card
+****************************************************************************/
+void SD_RawRestoreMode ()
+{
+	int files;
+	int selected;
+	char msg[64];
+	s32 writen = 0;
+	int i;
+
+	clearRightPane();
+	DrawText(400,130,"R A W   R e s t o r e");
+	DrawText(450,150,"M o d e");
+	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ");
+	
+	files = SDGetFileList (0);
+	if (!files)
+	{
+		WaitPrompt ("No raw backups in SD Card to restore !");
+	}else
+	{
+		selected = ShowSelector (0);
+
+		if (cancel)
+		{
+			WaitPrompt ("Restore action cancelled !");
+			return;
+		}
+		else
+		{
+			//Now imageserial and sramex.flash_id[MEM_CARD] variables should hold the proper information
+			for (i=0;i<12;i++){
+				if (imageserial[i] != sramex->flash_id[MEM_CARD][i]){
+					WaitPrompt ("Card and image flash ID don't match !");
+					return;
+				}
+			}
+			ShowAction ("Reading from SD Card...");
+			if (RestoreRawImage(MEM_CARD, (char*)filelist[selected], &writen) == 1)
+			{
+				sprintf(msg, "Restore complete! Wrote %d bytes to card",writen);
+				WaitPrompt(msg);
+			}else
+			{
+				WaitPrompt("Restore failed!");
+			}
+		}
+	}
+}
+
 /****************************************************************************
 * Main
 ****************************************************************************/
@@ -492,10 +527,11 @@ int main ()
 	{
 		/*** Select Mode ***/
 		ClearScreen();
+		setfontsize (FONT_SIZE);
 		cancel = 0;/******a global value to track action aborted by user pressing button B********/
 		mode = SelectMode ();
 #ifdef HW_RVL		
-		if (mode != 100 && mode != 500){
+		if ((mode != 500 ) && (mode != 100)){
 			if (WaitPromptChoice ("Please select a memory card slot", "Slot B", "Slot A") == 1)
 			{
 				MEM_CARD = CARD_SLOTA;
@@ -540,8 +576,53 @@ int main ()
 			if (have_sd) SD_BackupModeAllFiles();
 			else WaitPrompt("Reboot aplication with an SD card");
 			break;
+		case 700 : //Raw backup mode
+			if (have_sd)
+			{
+				DrawText(50, 230, "R A W   B a c k u p   M o d e");
+				SD_RawBackupMode();
+			}else
+			{
+				WaitPrompt("Reboot aplication with an SD card");
+			}
+			break;
+		case 800 : //Raw restore mode
+			//These two lines are a work around for the second call of CARD_Probe to detect a newly inserted memory card
+			CARD_Probe(MEM_CARD);
+			VIDEO_WaitVSync (); 		
+			if (CARD_Probe(MEM_CARD) > 0)
+			{
+				if (have_sd) SD_RawRestoreMode();
+				else WaitPrompt("Reboot aplication with an SD card");
+				
+			}else if (MEM_CARD)
+			{
+				WaitPrompt("Please insert a memory card in slot B");
+			}else
+			{
+				WaitPrompt("Please insert a memory card in slot A");
+			}				
+			break;
+		case 900 : //Format card mode
+			//These two lines are a work around for the second call of CARD_Probe to detect a newly inserted memory card
+			CARD_Probe(MEM_CARD);
+			VIDEO_WaitVSync (); 
+			if (CARD_Probe(MEM_CARD) > 0)
+			{
+				DrawText(50, 230, "F o r m a t   C a r d   M o d e");
+				clearRightPane();
+				MC_FormatMode(MEM_CARD);
+				
+			}else if (MEM_CARD)
+			{
+				WaitPrompt("Please insert a memory card in slot B");
+			}else
+			{
+				WaitPrompt("Please insert a memory card in slot A");
+			}
+			break;
 		}
-		
+
 		offsetchanged = true;
 	}
 	while (1);

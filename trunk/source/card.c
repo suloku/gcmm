@@ -181,10 +181,10 @@ static void __erase_callback(s32 chn,s32 result);
 static void __dsp_donecallback(u32 chn);
 static s32 __dounlock(s32 chn,u32 *key);
 static s32 __card_readsegment(s32 chn,cardcallback callback);
-static s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
+ s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
 static s32 __card_updatefat(s32 chn,struct card_bat *fatblock,cardcallback callback);
 static s32 __card_updatedir(s32 chn,cardcallback callback);
-static s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
+ s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
 static s32 __card_writepage(s32 chn,cardcallback callback);
 static s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
 static s32 __card_onreset(s32 final);
@@ -278,7 +278,7 @@ static __inline__ struct card_bat* __card_getbatblock(card_block *card)
 	return card->curr_fat;
 }
 
-static s32 __card_sync(s32 chn)
+s32 __card_sync(s32 chn)
 {
 	s32 ret;
 	u32 level;
@@ -1553,7 +1553,7 @@ static void __card_dirwritecallback(s32 chn,s32 result)
 	}
 }
 
-static s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback)
+s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback)
 {
 	s32 ret;
 	card_block *card = NULL;
@@ -1574,7 +1574,7 @@ static s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallb
 	return ret;
 }
 
-static s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback)
+s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback)
 {
 	s32 ret;
 	card_block *card = NULL;
