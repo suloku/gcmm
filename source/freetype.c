@@ -6,6 +6,7 @@
 * routines.
 ****************************************************************************/
 #include <gccore.h>
+#include <ogcsys.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,7 @@
 #include "mcard.h"
 #include "sdsupp.h"
 #include "bitmap.h"
+#include "raw.h"
 
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
@@ -34,13 +36,17 @@ FT_UInt glyph_index;
 extern card_stat CardStatus;
 extern int cancel;
 extern int mode;
-extern int MEM_CARD;
+extern s32 MEM_CARD;
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 icondata[1024] ATTRIBUTE_ALIGN (32);
 extern u16 icondataRGB[1024] ATTRIBUTE_ALIGN (32);
 extern u16 tlut[256] ATTRIBUTE_ALIGN (32);
 extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
+extern Header cardheader;
+extern s32 memsize, sectsize;
+extern syssramex *sramex;
+extern u8 imageserial[12];
 
 static int fonthi, fontlo;
 
@@ -343,7 +349,7 @@ int SelectMode ()
 			}
 			return 100;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_Z)
+		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_Z)//Delete mode
 		{
 			while ((PAD_ButtonsDown (0) & PAD_BUTTON_B))
 			{
@@ -351,7 +357,7 @@ int SelectMode ()
 			}
 			return 200;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_BUTTON_Y)
+		if (PAD_ButtonsHeld (0) & PAD_BUTTON_Y)//Backup mode
 		{
 			while ((PAD_ButtonsDown (0) & PAD_BUTTON_Y))
 			{
@@ -359,7 +365,7 @@ int SelectMode ()
 			}
 			return 300;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_BUTTON_X)
+		if (PAD_ButtonsHeld (0) & PAD_BUTTON_X)//Restore mode
 		{
 			while ((PAD_ButtonsDown (0) & PAD_BUTTON_X))
 			{
@@ -367,7 +373,7 @@ int SelectMode ()
 			}
 			return 400;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_BUTTON_START)
+		if (PAD_ButtonsHeld (0) & PAD_BUTTON_START)//Exit
 		{
 			while ((PAD_ButtonsDown (0) & PAD_BUTTON_START))
 			{
@@ -375,7 +381,7 @@ int SelectMode ()
 			}
 			return 500;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_R)
+		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_R)//Backup all mode
 		{
 			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_R))
 			{
@@ -383,7 +389,32 @@ int SelectMode ()
 			}
 			return 600;
 		}
+		while (PAD_ButtonsHeld (0) & PAD_TRIGGER_L)
+		{
+			if (PAD_ButtonsHeld (0) & PAD_BUTTON_Y){//Raw backup mode
+				while ((PAD_ButtonsDown (0) & PAD_TRIGGER_L) || (PAD_ButtonsDown (0) & PAD_BUTTON_Y))
+				{
+					VIDEO_WaitVSync ();
+				}
+				return 700;
+			}
 
+			if (PAD_ButtonsHeld (0) & PAD_BUTTON_X){//Raw restore mode
+				while ((PAD_ButtonsDown (0) & PAD_TRIGGER_L) || (PAD_ButtonsDown (0) & PAD_BUTTON_X))
+				{
+					VIDEO_WaitVSync ();
+				}
+				return 800;
+			}
+
+			if (PAD_ButtonsHeld (0) & PAD_TRIGGER_Z){//Format card mode
+				while ((PAD_ButtonsDown (0) & PAD_TRIGGER_L) || (PAD_ButtonsDown (0) & PAD_TRIGGER_Z))
+				{
+					VIDEO_WaitVSync ();
+				}
+				return 900;
+			}			
+		}		
 #ifdef HW_RVL
 		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_A)
 		{
@@ -395,13 +426,13 @@ int SelectMode ()
 		}
 		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_2)
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_2))
+			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_2))//Delete mode
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 200;
 		}
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_MINUS)
+		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_MINUS)//Backup mode
 		{
 			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_MINUS))
 			{
@@ -409,7 +440,7 @@ int SelectMode ()
 			}
 			return 300;
 		}
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_PLUS)
+		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_PLUS)//Restore mode
 		{
 			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_PLUS))
 			{
@@ -417,7 +448,7 @@ int SelectMode ()
 			}
 			return 400;
 		}
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_HOME)
+		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_HOME)//Exit
 		{
 			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_HOME))
 			{
@@ -425,13 +456,39 @@ int SelectMode ()
 			}
 			return 500;
 		}
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_1)
+		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_1)//Backup all mode
 		{
 			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_1))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 600;
+		}
+		while (WPAD_ButtonsHeld (0) & WPAD_BUTTON_B)
+		{
+			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_MINUS){//Raw backup mode
+				while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_B) || (WPAD_ButtonsDown (0) & WPAD_BUTTON_MINUS))
+				{
+					VIDEO_WaitVSync ();
+				}
+				return 700;
+			}
+
+			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_PLUS){//Raw restore mode
+				while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_B) || (WPAD_ButtonsDown (0) & WPAD_BUTTON_PLUS))
+				{
+					VIDEO_WaitVSync ();
+				}
+				return 800;
+			}
+			
+			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_2){//Format card mode
+				while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_B) || (WPAD_ButtonsDown (0) & WPAD_BUTTON_2))
+				{
+					VIDEO_WaitVSync ();
+				}
+				return 900;
+			}			
 		}
 		if (power)
 		{
@@ -515,6 +572,43 @@ int WaitButtonAB ()
 #endif
 }
 
+/****************************************************************************
+ * Wait for user to press A or B. Returns 0 = Z/2; 1 = A
+ ****************************************************************************/
+
+int WaitButtonAZ ()
+{
+#ifdef HW_RVL
+	u32 gc_btns, wm_btns;
+
+	while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_TRIGGER_Z))
+	        || (WPAD_ButtonsDown(0) & (WPAD_BUTTON_A | WPAD_BUTTON_2 | WPAD_CLASSIC_BUTTON_A | WPAD_CLASSIC_BUTTON_ZR | WPAD_CLASSIC_BUTTON_ZL))
+	      ) VIDEO_WaitVSync();
+
+	while (1)
+	{
+		gc_btns = PAD_ButtonsDown (0);
+		wm_btns = WPAD_ButtonsDown (0);
+		if ( (gc_btns & PAD_BUTTON_A) || (wm_btns & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A)) )
+			return 1;
+		else if ( (gc_btns & PAD_TRIGGER_Z) || (wm_btns & (WPAD_BUTTON_2 | WPAD_CLASSIC_BUTTON_ZR | WPAD_CLASSIC_BUTTON_ZL)) )
+			return 0;
+	}
+#else
+	u32 gc_btns;
+
+	while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_TRIGGER_Z)) ) VIDEO_WaitVSync();
+
+	while (1)
+	{
+		gc_btns = PAD_ButtonsDown (0);
+		if ( gc_btns & PAD_BUTTON_A )
+			return 1;
+		else if ( gc_btns & PAD_TRIGGER_Z )
+			return 0;
+	}
+#endif
+}
 
 
 /**
@@ -551,7 +645,26 @@ int WaitPromptChoice ( char *msg, char *bmsg, char *amsg)
 
 	return ret;
 }
+/****************************************************************************
+ * Show a prompt with choice of two options. Returns 1 if A button was pressed
+   and 0 if Z/2 button was pressed.
+ ****************************************************************************/
+int WaitPromptChoiceAZ ( char *msg, char *bmsg, char *amsg)
+{
+	char txt[80];
+	int ret;
+#ifdef	HW_RVL
+	sprintf (txt, "Z/2 = %s   :   A = %s", bmsg, amsg);
+#else
+	sprintf (txt, "Z = %s   :   A = %s", bmsg, amsg);
+#endif
+	writeStatusBar(msg, txt);
+	ret = WaitButtonAZ ();
+	//Clear the text
+	writeStatusBar("","");
 
+	return ret;
+}
 void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b)
 {
 	int width;
@@ -565,6 +678,73 @@ void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b)
 
 	for (i = 0; i < width; i++)
 		xfb[whichfb][offset++] = colour;
+}
+
+void showCardInfo(int sel){
+	//clear right pane, but just the card info
+	int bgcolor = getcolour(84,174,211);
+	DrawBoxFilled(375, 165, 605, 390, bgcolor);
+	int y = 190, x = 375;
+	int err;
+	char txt[1024];
+	int i;
+	char temp[5];
+
+	//START card image info START
+	//put block 1 in cardheader
+	SDLoadCardImageHeader((char*)filelist[sel]);
+	//get the serial
+	getserial(imageserial);
+	
+	sprintf(txt, "Card image flash ID");
+	DrawText(x, y, txt);
+	y += 20;	
+
+	sprintf(txt, "%02X", imageserial[0]);
+	for (i=1; i<11; i++){
+		sprintf(temp, "%02X", imageserial[i]);
+		strcat(txt, temp);
+	}
+	DrawText(x,y,txt);
+	y+=20;
+	
+	sprintf(txt, "Size: %d blocks", (cardheader.SizeMb[1]*16)-5);
+	DrawText(x, y, txt);
+	y+=40;
+	//END card image info END
+
+	//START real card info START
+	err = MountCard(MEM_CARD);
+	if (err < 0)
+	{
+		WaitCardError("CardMount", err);
+		return;			/*** Unable to mount the card ***/
+	}
+	
+	sramex = __SYS_LockSramEx();
+	__SYS_UnlockSramEx(0);
+	
+	if (!MEM_CARD)
+	{
+		sprintf(txt, "Slot A card flash ID:");
+	}else
+	{
+		sprintf(txt, "Slot B card flash ID:");
+	}
+	DrawText(x,y,txt);
+	y+=20;
+
+	sprintf(txt, "%02X", sramex->flash_id[MEM_CARD][0]);
+	for (i=1; i<sizeof(sramex->flash_id[MEM_CARD])-1; i++){
+		sprintf(temp, "%02X", sramex->flash_id[MEM_CARD][i]);
+		strcat(txt, temp);
+	}
+	DrawText(x,y,txt);
+	y+=20;
+	
+	sprintf(txt, "Size: %d blocks", (memsize*16)-5);
+	DrawText(x,y,txt);
+	//END real card info END
 }
 
 void showSaveInfo(int sel)
@@ -714,12 +894,15 @@ void showSaveInfo(int sel)
 
 }
 
-
-static void ShowFiles (int offset, int selection, int upordown) {
+// saveinfo 1: shows saveinfo (for gci/sav/gcs backup/restore)
+// saveinfo 0: retrieves .raw, .gcp and .mci
+static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 	int i, j;    //j helps us determine which entry to highlight
 	char text[23];
 	int ypos;
 	int w;
+	//int textlen = 22;
+	int textlen = 32;
 	//If the filelist offset changed, we have to redraw every entry
 	//This tracks switching "pages" of files in the list
 	if (offsetchanged) {
@@ -738,8 +921,8 @@ static void ShowFiles (int offset, int selection, int upordown) {
 		for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); i++){
 			//changed this to limit characters shown in filename since display gets weird
 			//if we let the entire filename appear
-			strncpy (text, (char*)filelist[i], 22);
-			text[22] = 0;
+			strncpy (text, (char*)filelist[i], textlen);
+			text[textlen] = 0;
 			if (j == (selection - offset)){
 				/*** Highlighted text entry ***/
 				for (w = 0; w < 20; w++){
@@ -763,7 +946,11 @@ static void ShowFiles (int offset, int selection, int upordown) {
 		}
 		//set black font - info on right side of screen is printed in showSaveInfo
 		setfontcolour (28, 28, 28);
-		showSaveInfo(selection);
+		if (saveinfo){
+			showSaveInfo(selection);
+		}else if (!saveinfo){
+			showCardInfo(selection);
+		}
 	}
 	else {
 		//Filelist offset didn't change yet; Only redraw what matters
@@ -773,8 +960,8 @@ static void ShowFiles (int offset, int selection, int upordown) {
 		setfontcolour (0xff, 0xff, 0xff);
 		//user just pressed up
 		if (upordown == 1) {
-			strncpy (text, (char*)filelist[selection+1], 22);
-			text[22] = 0;
+			strncpy (text, (char*)filelist[selection+1], textlen);
+			text[textlen] = 0;
 			for (w = 0; w < 20; w++){
 				DrawLineFast (35, 330, (((selection-offset)+1) * 20) + (ypos - 14) + w, 84, 174,211);
 			}
@@ -782,8 +969,8 @@ static void ShowFiles (int offset, int selection, int upordown) {
 		}
 		//user just pressed down
 		else if (upordown == 2) {
-			strncpy (text, (char*)filelist[selection-1], 22);
-			text[22] = 0;
+			strncpy (text, (char*)filelist[selection-1], textlen);
+			text[textlen] = 0;
 			for (w = 0; w < 20; w++){
 				DrawLineFast (35, 330, (((selection-offset)-1) * 20) + (ypos - 14) + w, 84, 174,211);
 			}
@@ -793,14 +980,18 @@ static void ShowFiles (int offset, int selection, int upordown) {
 		//appear faster - without it the highlight box glides too much
 		ShowScreen();
 		setfontcolour (28, 28, 28);
-		strncpy (text, (char*)filelist[selection], 22);
-		text[22] = 0;
+		strncpy (text, (char*)filelist[selection], textlen);
+		text[textlen] = 0;
 		//the current spot is always highlighted
 		for (w = 0; w < 20; w++){
 			DrawLineFast (35, 330, ((selection-offset) * 20) + (ypos - 14) + w, 0xff, 0xff, 0xff);
 		}
 		DrawText (35, ((selection-offset) * 20) + ypos, text);
-		showSaveInfo(selection);
+		if (saveinfo){
+			showSaveInfo(selection);
+		}else if (!saveinfo){
+			showCardInfo(selection);
+		}
 	}
 	//Need this to show info update from showSaveInfo
 	ShowScreen();
@@ -841,8 +1032,10 @@ static void ShowFiles (int offset, int selection, int upordown) {
 *
 * Let's the user select a file to backup or restore.
 * Returns index of file chosen.
+* saveinfo 1: enables getting and displaying saveinformation
+* saveinfo 0: disables save information (for raw mode)
 ****************************************************************************/
-int ShowSelector ()
+int ShowSelector (int saveinfo)
 {
 	u32 p;
 #ifdef HW_RVL
@@ -858,7 +1051,7 @@ int ShowSelector ()
 	{
 		if (redraw)
 		{
-			ShowFiles (offset, selection, upordown);
+			ShowFiles (offset, selection, upordown, saveinfo);
 			redraw = 0;
 		}
 		p = PAD_ButtonsDown (0);

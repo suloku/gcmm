@@ -15,6 +15,8 @@
 #include "freetype.h"
 #include "gci.h"
 #include "mcard.h"
+#include "card.h"
+#include "raw.h"
 
 #define PAGESIZE 20
 #define PADCAL 80
@@ -25,6 +27,7 @@
 /*** Memory Card FileBuffer ***/
 #define MAXFILEBUFFER (1024 * 2048)	/*** 2MB Buffer ***/
 extern u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
+extern Header cardheader;
 extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
@@ -377,10 +380,13 @@ int SDLoadMCImageHeader(char *sdfilename)
 	}
 
 	ExtractGCIHeader();
-//	GCIMakeHeader();
+#ifdef STATUSOGC	
+	GCIMakeHeader();
+#else
 	//Let's get the full header as is, instead of populating it...
 	memset(&gci, 0xff, sizeof(GCI)); /*** Clear out the cgi header ***/
 	memcpy (&gci, FileBuffer, sizeof (GCI));
+#endif
 
 	//Find how many icons are present
 	numicons = 8;
@@ -464,6 +470,62 @@ int SDLoadMCImageHeader(char *sdfilename)
 	return bytesToRead;
 }
 
+int SDLoadCardImageHeader(char *sdfilename)
+{
+
+	FILE *handle;
+	char filename[1024];
+	char msg[256];
+	long bytesToRead = 0;
+
+	/*** Clear the work buffers ***/
+	memset (&cardheader, 0, sizeof(Header));
+
+	/*** Make fullpath filename ***/
+	sprintf (filename, "fat:/%s/%s", MCSAVES, sdfilename);
+
+	/*** Open the SD Card file ***/
+	handle = fopen ( filename , "rb" );
+	if (handle <= 0)
+	{
+		sprintf(msg, "Couldn't open %s", filename);
+		WaitPrompt (msg);
+		return 0;
+	}
+
+	// obtain file size:
+	fseek (handle , 0 , SEEK_END);
+	bytesToRead = ftell (handle);
+	rewind (handle);
+	if (bytesToRead < 8192) //We don't want to read something smaller than the card header
+	{
+		sprintf(msg, "Incorrect file size %ld . Not raw image file or header", bytesToRead);
+		WaitPrompt (msg);
+		return 0;
+	}
+
+	char fileType[1024];
+	char * dot;
+	int pos = 4;
+	dot = strrchr(filename,'.');
+	strncpy(fileType, dot+1,pos);
+	fileType[pos]='\0';
+
+	if(!strcasecmp(fileType, "mci"))
+	{
+		//MCI files have a 64 byte header
+		fseek(handle, 64, SEEK_SET);
+	}
+	memset(&cardheader, 0, sizeof(cardheader));
+	/*** Read the file header ***/
+	fread (&cardheader,1,sizeof(cardheader),handle);
+
+	/*** Close the file ***/
+	fclose (handle);
+	
+	return bytesToRead;
+}
+
 int isdir_sd(char *path)
 {
 	DIR* dir = opendir(path);
@@ -475,12 +537,43 @@ int isdir_sd(char *path)
 	return 1;
 }
 
+//Code from Kobie. Returns true if extension matches (also works with paths), should check only the last '.' in the string.
+bool compare_extension(char *filename, char *extension)
+{
+    /* Sanity checks */
+
+    if(filename == NULL || extension == NULL)
+        return false;
+
+    if(strlen(filename) == 0 || strlen(extension) == 0)
+        return false;
+
+    if(strchr(filename, '.') == NULL || strchr(extension, '.') == NULL)
+        return false;
+
+    /* Iterate backwards through respective strings and compare each char one at a time */
+	int i;
+    for(i = 0; i < strlen(filename); i++)
+    {
+        if(tolower(filename[strlen(filename) - i - 1]) == tolower(extension[strlen(extension) - i - 1]))
+        {
+            if(i == strlen(extension) - 1)
+                return true;
+        } else
+            break;
+    }
+
+    return false;
+}
+
 /****************************************************************************
 * SDGetFileList
 *
 * Get the directory listing from SD Card
+* Mode 1: retrieves .gci, .sav and .gcs
+* Mode 0: retrieves .raw, .gcp and .mci
 ****************************************************************************/
-int SDGetFileList()
+int SDGetFileList(int mode)
 {
 	int filecount = 0;
 	DIR *dir;
@@ -501,11 +594,23 @@ int SDGetFileList()
 	{
 		if(strncmp(dit->d_name, ".", 1) != 0 && strncmp(dit->d_name, "..", 2) != 0)
 		{
-			strcpy((char *)filelist[filecount], dit->d_name);
-			sprintf(namefile, "%s%s", filename, dit->d_name);
-			dirtype = ((isdir_sd(namefile) == 1) ? DIRENT_T_DIR : DIRENT_T_FILE);
+			if (mode){
+				if (compare_extension(dit->d_name, ".gci") || compare_extension(dit->d_name, ".sav") || compare_extension(dit->d_name, ".gcs")){
+					strcpy((char *)filelist[filecount], dit->d_name);
+					sprintf(namefile, "%s%s", filename, dit->d_name);
+					dirtype = ((isdir_sd(namefile) == 1) ? DIRENT_T_DIR : DIRENT_T_FILE);
 
-			filecount++;
+					filecount++;
+				}
+			}else if (!mode){
+				if (compare_extension(dit->d_name, ".raw") || compare_extension(dit->d_name, ".gcp") || compare_extension(dit->d_name, ".mci")){
+					strcpy((char *)filelist[filecount], dit->d_name);
+					sprintf(namefile, "%s%s", filename, dit->d_name);
+					dirtype = ((isdir_sd(namefile) == 1) ? DIRENT_T_DIR : DIRENT_T_FILE);
+
+					filecount++;
+				}			
+			}
 		}
 	}
 

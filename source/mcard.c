@@ -22,13 +22,6 @@
 #include "gci.h"
 #include "freetype.h"
 
-// If STATUSOGC defined uses CARD_GetStatus and CARD_SetStatus
-// Default (undefined) uses __card_getstatusex and __card_setstatusex
-// Diference: when restoring a savegame with the ex functions original time, copy counter, etc are preserved
-// Also, libogc creates card entries with time since 1970 and gamecube uses time since 2000... thus libogc adds 30 years!
-
-//#define STATUSOGC
-
 /*** Memory Card Work Area ***/
 static u8 SysArea[CARD_WORKAREA] ATTRIBUTE_ALIGN (32);
 
@@ -61,20 +54,21 @@ static card_file CardFile;
 static card_stat CardStatus;
 static int cardcount = 0;
 static u8 permission;
-
+s32 memsize, sectsize;
 
 GCI gci;
-
 
 /*---------------------------------------------------------------------------------
 	This function is called if a card is physically removed
 ---------------------------------------------------------------------------------*/
 void card_removed(s32 chn,s32 result)
 {
-	if (chn == CARD_SLOTA)
-		printf("Card was removed from slot A");
-	else
-		printf("Card was removed from slot B");
+	if (chn == CARD_SLOTA){
+		//printf("Card was removed from slot A");
+	}
+	else{
+		//printf("Card was removed from slot B");
+	}
 	CARD_Unmount(chn);
 }
 
@@ -89,8 +83,7 @@ int MountCard(int cslot)
 {
 	s32 ret = -1;
 	int tries = 0;
-	int isMounted, memsize, sectsize;
-	char msg[64];
+	int isMounted;
 
 	// Mount the card, try several times as they are tricky
 	while ( (tries < 10) && (ret < 0))
@@ -684,7 +677,7 @@ void MC_DeleteMode(int slot)
 		while(1)
 		{
 			// TODO: implement showselector
-			selected = ShowSelector();
+			selected = ShowSelector(1);
 			if (cancel)
 			{
 				WaitPrompt ("Delete action cancelled !");
@@ -728,4 +721,58 @@ void MC_DeleteMode(int slot)
 			offsetchanged = true;
 		}
 	}
+}
+
+void MC_FormatMode(s32 slot)
+{
+	int erase = 1;
+	int err;
+	
+	//0 = B wass pressed -> ask again
+	if (!slot){
+		erase = WaitPromptChoice("Are you sure you want to format memory card in slot A?", "Format", "Cancel");
+	}else{
+		erase = WaitPromptChoice("Are you sure you want to format memory card in slot B?", "Format", "Cancel");
+	}
+	
+	if (!erase){
+		if (!slot){
+			erase = WaitPromptChoiceAZ("All contents of memory card in slot A will be erased, continue?", "Format", "Cancel");
+		}else{
+			erase = WaitPromptChoiceAZ("All contents of memory card in slot B will be erased, continue?", "Format", "Cancel");
+		}
+
+		if (!erase)
+		{
+
+			/*** Try to mount the card ***/
+			err = MountCard(slot);
+			if (err < 0)
+			{
+				WaitCardError("MCFormat Mount", err);
+				return; /*** Unable to mount the card ***/
+			}
+			ShowAction("Formatting card...");
+			/*** Format the card ***/
+			CARD_Format(slot);
+			usleep(1000*1000);
+
+			/*** Try to mount the card ***/
+			err = MountCard(slot);
+			if (err < 0)
+			{
+				WaitCardError("MCFormat Mount", err);
+				return; /*** Unable to mount the card ***/
+			}else
+			{
+				WaitPrompt("Format completed successfully");
+			}
+
+				CARD_Unmount(slot);
+				return;
+		}
+	}
+
+	WaitPrompt("Format operation cancelled");
+	return;
 }
