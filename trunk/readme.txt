@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                         GCMM 1.1                              ·oø×O0|
+|0O×øo·                         GCMM 1.2                              ·oø×O0|
 |                   http://code.google.com/p/gcmm                           |
 |                          (Under GPL License)                              |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
@@ -16,6 +16,9 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 * Backups and restores savegames into GCI format
 * Restores savegames in GCS/SAV format
 * Deletes savegames from memory card
+* Backups memory card raw images in .raw format
+* Restores memory card raw images from RAW/GCP/MCI format
+* Format the memory card
 * Wiimote and GameCube controller support
 * Power button support
 * Front SD and FAT32 USB device (wii) and SDGecko (gamecube) support
@@ -26,6 +29,15 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+[What's New 1.2 - september 06, 2012 - By suloku]
+
+* Added raw backup mode (in .raw format, compatible with dolphin and devolution)
+* Added RAW/GCP/MCI support for raw restore mode
+* Added format mode
+* Flash ID of inserted card and SD image are shown in Raw Restore Mode
+* Protection against writing a raw image to the wrong card (trough Flash ID checking)
+* Raw mode works with official and unofficial cards, as well as gci mode (thanks to tueidj for pointing me in the right path!)
 
 [What's New 1.1 - august 29, 2012 - By suloku]
 
@@ -69,8 +81,7 @@ Accepted PlabloACZ and Picachu025 modifications, with the following changes:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             TO DO                             ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-* Add raw image read and write support
-* Add hotswapping
+* Add hotswapping (memory cards can be swapped, SD Gecko/SD/USB can't be swapped)
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                          LIMITATIONS                          ·oø×O0|
@@ -82,7 +93,7 @@ Protected gamesaves will only be able to be restored on the card it was backuped
 
 Protected savegames rely on the serial ID that is given to the memory card when it is formated. That's why they won't work in other cards and why they won't work on the same card if that has been formatted.
 
-Restoring a raw image to a diferent card has still to be tested to see if that will permit using a protected gamesave on another memory card.
+Restoring a raw image to a diferent card won't work. Please note that all unofficial cards share the same Flash ID (serial ID), allowing raw image restoring between unofficial cards (as long as they are the same size).
 
 Known protected savegames:
 * F-zero GX
@@ -92,7 +103,7 @@ Known protected savegames:
 ----------------------------
 There are computer programs that can transform other savegame formats into GCI (currently GCMM supports SAV and GCS restoring).
 
-GCP format is a raw savegame image of the memory card. At the moment creating a raw image is possible thanks to Masken, but there are still problems when restoring.
+RAW/GCP format is a raw image of the memory card with all its contents.
 
 MCI format (createad by softdev's sdmc) is a raw image of the card, preceded by a 64 byte header.
 
@@ -159,6 +170,12 @@ This document doesn't cover how to do any of that. A good source for information
 
 They are shown at the screen.
 
+Raw mode controls:
+* Raw Backup Mode:  GC_pad L+Y , Wiimote B+Minus
+* Raw Restore Mode: GC_pad L+X , Wiimote B+Plus
+* Format Card Mode: GC_pad L+Z , Wiimote B+2
+
+
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                          COMPILING                            ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
@@ -180,7 +197,7 @@ Currently gcmm uses:
 *Justb & dsbomb for originally creating gcmm
 *CowTRobo & Samsom for very useful old sources
 *Tantric for pointing out that official memory cards won't work on wii mode, which encouraged me to continue gcmm as all my previous efforts where in vane due to using an official card for the testing.
-*tueidj, for his patches and very useful information and support.
+*tueidj, for his patches and very useful information and support. Official memory cards work due to his work.
 *dronesplitter for banner and icon implementation
 *PlabloACZ and Picachu025 for updating the source.
 *Nano, for inspiring me to finally working again on GCMM
