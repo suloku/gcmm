@@ -309,11 +309,11 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 			fclose(dumpFd);
 			
 			// Test code to see if raw image is correctly read
-			FILE *test = 0;
+			/*FILE *test = 0;
 			test = fopen ( "fat:/test.bin" , "wb" );
 			fwrite (CardBuffer , 1 , BlockCount*0x2000 , test );
 			fclose (test);
-			
+			*/
 			
 			//printf("writing data to memory card...\n");
 			ShowAction ("Writing data to memory card...");
