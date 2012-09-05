@@ -624,6 +624,7 @@ s32 __card_setstatusex(s32 chn,s32 fileno,struct card_direntry *entry);
 s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
 s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
 s32 __card_sync(s32 chn);
+s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
 
 #ifdef __cplusplus
    }
