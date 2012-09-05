@@ -2,11 +2,11 @@
 <app version="1">
 	<name>GCMM</name>
 	<coder>Suloku, PabloACZ, Pikachu025, dronesplitter</coder>
-	<version>1.1</version>
-	<release_date>20120829000000</release_date>
+	<version>1.2</version>
+	<release_date>20120906000000</release_date>
 	<short_description>Memory Card Manager</short_description> 
 	<long_description>A memory card manager for Wii/GC.
 
 Thanks to original mcbackup example code, Askot, dsbomb and justb.
-Special thanks to Costis, Masken and Tantric.</long_description> 
+Special thanks to Costis, Masken, Tantric and tueidj.</long_description> 
 </app>
