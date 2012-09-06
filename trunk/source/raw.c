@@ -47,7 +47,6 @@ void getserial(u8 *serial)
 		
 		serial[i] = cardheader.serial[i];
 	}
-	serial[13]="\0";
 
 }
 	
