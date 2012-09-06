@@ -528,6 +528,7 @@ int main ()
 		/*** Select Mode ***/
 		ClearScreen();
 		setfontsize (FONT_SIZE);
+		freecardbuf();
 		cancel = 0;/******a global value to track action aborted by user pressing button B********/
 		mode = SelectMode ();
 #ifdef HW_RVL		

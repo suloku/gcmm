@@ -17,6 +17,7 @@ typedef struct {
 	u8 Unused2[7680];		//0x0200		0x1e00	unused (0xff)
  } __attribute__((__packed__)) Header;
 
+void freecardbuf();
 void getserial(u8 *serial);
 s8 BackupRawImage(s32 slot, s32 *bytes_writen);
 s8 RestoreRawImage(s32 slot, char *sdfilename, s32 *bytes_writen);

@@ -16,6 +16,8 @@
 #include "freetype.h"
 #include "raw.h"
 
+#define mem_free(x) {free(x);x=NULL;}
+
 u8 *CardBuffer = 0;
 s8 read_data = 0;
 s8 write_data = 0;
@@ -29,6 +31,17 @@ extern u32 __SYS_UnlockSramEx(u32 write);
 
 syssramex *sramex;
 u8 imageserial[12];
+
+void freecardbuf(){
+	if(CardBuffer)
+	{
+		if(CardBuffer != NULL)
+		{
+			mem_free(CardBuffer);
+			CardBuffer = NULL;
+		}
+	}
+}
 
 //code from tueidj's Devolution
 void getserial(u8 *serial)
@@ -170,7 +183,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	dumpFd = fopen(filename,"wb");
 	if (dumpFd == NULL)
 	{
-		free(CardBuffer);
+		mem_free(CardBuffer);
 		//printf("can not create file on SD\n");
 		WaitPrompt("BackRaw: cannot create file on SD.");
 		return -1;
@@ -195,7 +208,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 		}
 		else
 		{
-			free(CardBuffer);
+			mem_free(CardBuffer);
 			//printf("\nerror reading data : %d...\n",err);
 			fclose(dumpFd);
 			WaitCardError("BakRaw __read", err);
@@ -214,7 +227,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	fclose(dumpFd);
 	if(bytes_writen != NULL)
 		*bytes_writen = writen;
-	free(CardBuffer);
+	mem_free(CardBuffer);
 	return 1;
 }
 
@@ -267,7 +280,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 	dumpFd = fopen ( filename , "rb" );
 	if (dumpFd <= 0)
 	{
-		free(CardBuffer);
+		mem_free(CardBuffer);
 		sprintf(msg, "Couldn't open %s", filename);		
 		WaitPrompt (msg);
 		return -1;
@@ -284,7 +297,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 		if((lSize-64) != BlockCount*SectorSize){
 			//incorrect dump size D:<
 			fclose(dumpFd);
-			free(CardBuffer);
+			mem_free(CardBuffer);
 			WaitPrompt ("Card and image sizes differ");
 			return -1;
 		}
@@ -348,7 +361,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 					}else
 					{
 						fclose(dumpFd);
-						free(CardBuffer);
+						mem_free(CardBuffer);
 						//printf("\nerror writing data(%d) Memory card could be corrupt now!!!\n",err);
 						sprintf(msg, "error erasing sector(%d) Memory card could be corrupt now!!!",err);
 						WaitPrompt (msg);
@@ -375,7 +388,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 				else
 				{
 					fclose(dumpFd);
-					free(CardBuffer);
+					mem_free(CardBuffer);
 					//printf("\nerror writing data(%d) Memory card could be corrupt now!!!\n",err);
 					sprintf(msg, "error writing data(%d) Memory card could be corrupt now!!!",err);
 					WaitPrompt (msg);
@@ -386,12 +399,12 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 			//gprintf("\n");
 			if(bytes_writen != NULL)
 				*bytes_writen = writen;
-			free(CardBuffer);
+			mem_free(CardBuffer);
 			return 1;		
 		}
 	}
 	
-	free(CardBuffer);
+	mem_free(CardBuffer);
 	return -1;
 
 }
