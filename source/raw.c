@@ -174,10 +174,10 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	char name[64];
 	int filenumber = 1;
 	time2name(name);
-	sprintf (filename, "fat:/%s/Backup_%s.raw", MCSAVES, name);
+	sprintf (filename, "fat:/%s/%04db_%s.raw", MCSAVES, BlockCount-5, name);
 	//not really needed because the filename has seconds in it and the same filename will "never" happen
 	while (file_exists(filename)){
-		sprintf (filename, "fat:/%s/Backup_%s_%02d.raw", MCSAVES, name, filenumber);
+		sprintf (filename, "fat:/%s/%04db_%s_%02d.raw", MCSAVES, BlockCount-5, name, filenumber);
 		filenumber++;
 	}	
 	dumpFd = fopen(filename,"wb");
