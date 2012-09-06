@@ -171,6 +171,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	dumpFd = fopen(filename,"wb");
 	if (dumpFd == NULL)
 	{
+		free(CardBuffer);
 		//printf("can not create file on SD\n");
 		WaitPrompt("BackRaw: cannot create file on SD.");
 		return -1;
@@ -195,6 +196,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 		}
 		else
 		{
+			free(CardBuffer);
 			//printf("\nerror reading data : %d...\n",err);
 			fclose(dumpFd);
 			WaitCardError("BakRaw __read", err);
@@ -213,6 +215,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	fclose(dumpFd);
 	if(bytes_writen != NULL)
 		*bytes_writen = writen;
+	free(CardBuffer);
 	return 1;
 }
 
@@ -384,10 +387,12 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 			//gprintf("\n");
 			if(bytes_writen != NULL)
 				*bytes_writen = writen;
+			free(CardBuffer);
 			return 1;		
 		}
 	}
 	
+	free(CardBuffer);
 	return -1;
 
 }
