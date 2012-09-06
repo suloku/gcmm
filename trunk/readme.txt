@@ -30,6 +30,11 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 |0Oื๘oท                         UPDATE HISTORY                        ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+[What's New 1.2c - september 06, 2012 - By suloku]
+
+* Raw backups
+* Minor code changes (just for safety)
+
 [What's New 1.2b - september 06, 2012 - By suloku]
 
 * Solved a potential bug, 1.2 and 1.2a seemed unaffected by it.
