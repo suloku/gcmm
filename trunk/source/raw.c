@@ -322,6 +322,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 
 		if (!erase)
 		{
+			ShowAction ("Reading data...");
 			if ((lSize-64) == BlockCount*SectorSize) fseek(dumpFd, 64, SEEK_SET);
 			fread(CardBuffer,BlockCount*0x2000,1,dumpFd);
 			fclose(dumpFd);
