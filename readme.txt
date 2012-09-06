@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                         GCMM 1.2                              ·oø×O0|
+|0O×øo·                         GCMM 1.2c                             ·oø×O0|
 |                   http://code.google.com/p/gcmm                           |
 |                          (Under GPL License)                              |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
@@ -32,7 +32,7 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 
 [What's New 1.2c - september 06, 2012 - By suloku]
 
-* Raw backups
+* Raw backups are now named with the number of blocks: insted of Backup_*timestamp*.raw now it is 0059b_*timestamp.raw, 2043b_*timestamp.raw...
 * Minor code changes (just for safety)
 
 [What's New 1.2b - september 06, 2012 - By suloku]
