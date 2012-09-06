@@ -30,6 +30,10 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 |0Oื๘oท                         UPDATE HISTORY                        ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+[What's New 1.2a - september 06, 2012 - By suloku]
+
+* 1.2 wasn't correctly freeing memory and eventually raw backup and restore would hang the app (a 2043 block card would make it hang at the second attempt to raw backup the card)
+
 [What's New 1.2 - september 06, 2012 - By suloku]
 
 * Added raw backup mode (in .raw format, compatible with dolphin and devolution)
