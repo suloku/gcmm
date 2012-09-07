@@ -173,6 +173,10 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	s32 writen = 0;
 	char name[64];
 	int filenumber = 1;
+	
+	sprintf (filename, "fat:/%s", MCSAVES);
+	mkdir(filename, S_IREAD | S_IWRITE);	
+	
 	time2name(name);
 	sprintf (filename, "fat:/%s/%04db_%s.raw", MCSAVES, BlockCount-5, name);
 	//not really needed because the filename has seconds in it and the same filename will "never" happen
