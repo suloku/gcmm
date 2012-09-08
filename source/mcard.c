@@ -491,7 +491,7 @@ int CardWriteFile (int slot)
 	char company[4];
 	char gamecode[6];
 	char filename[CARD_FILENAMELEN];
-	int err;
+	int err, ret;
 	u32 SectorSize;
 	int offset;
 	int written;
@@ -526,7 +526,24 @@ int CardWriteFile (int slot)
 	{
 		if (((u32)CardDir.gamecode == (u32)gamecode) && (strcmp ((char *) CardDir.filename, (char *)filename) == 0))
 		{
-			/*** Found the file - abort ***/
+			/*** Found the file - prompt user ***/
+			ret = WaitPromptChoice("File already exists. Overwrite?", "Overwrite", "Cancel");
+			if (!ret){
+				ret = WaitPromptChoiceAZ("Are you -SURE- you want to overwrite?", "Overwrite", "Cancel");
+				if(!ret){
+					err = CARD_Delete(slot, (char *) &filename);
+					if (err < 0)
+					{
+						WaitCardError("MCDel", err);
+						CARD_Unmount (slot);
+						return 0;
+					}
+					err = CARD_FindFirst (slot, &CardDir, false);
+					continue;
+				}
+			}
+		
+			/*** User canceled - abort ***/
 			CARD_Unmount (slot);
 			WaitCardError("File already exists", err);
 			return 0;
@@ -539,10 +556,31 @@ int CardWriteFile (int slot)
 	CARD_SetCompany(company);
 	CARD_SetGamecode(gamecode);
 
+tryagain:
 	/*** Now restore the file from backup ***/
 	err = CARD_Create (slot, (char *) filename, filelen, &CardFile);
 	if (err < 0)
 	{
+		if (err == CARD_ERROR_EXIST)
+		{
+			/*** Found the file - prompt user ***/
+			ret = WaitPromptChoice("File already exists. Overwrite?", "Overwrite", "Cancel");
+			if (!ret){
+				ret = WaitPromptChoiceAZ("Are you -SURE- you want to overwrite?", "Overwrite", "Cancel");
+				if(!ret){
+					err = CARD_Delete(slot, (char *) &filename);
+					if (err < 0)
+					{
+						WaitCardError("MCDel", err);
+						CARD_SetCompany(NULL);
+						CARD_SetGamecode(NULL);						
+						CARD_Unmount (slot);
+						return 0;
+					}
+					goto tryagain;
+				}
+			}		
+		}
 		//Return To show all so we don't have errors
 		CARD_SetCompany(NULL);
 		CARD_SetGamecode(NULL);
@@ -572,12 +610,11 @@ int CardWriteFile (int slot)
 #ifdef STATUSOGC
 	/*** Finally, update the status ***/
 	CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
+	//For some reason this sets the file to Move->allowed, Copy->not allowed, Public file instead of the actual permission value
+	CARD_SetAttributes(slot, CardFile.filenum, &permission);	
 #else
 	__card_setstatusex(slot, CardFile.filenum, &gci);
 #endif
-
-	//For some reason this sets the file to Move->allowed, Copy->not allowed, Public file instead of the actual permission value
-	//CARD_SetAttributes(slot, CardFile.filenum, &permission);
 
 	//Return To show all so we don't have errors
 	CARD_SetCompany(NULL);
@@ -737,9 +774,9 @@ void MC_FormatMode(s32 slot)
 	
 	if (!erase){
 		if (!slot){
-			erase = WaitPromptChoiceAZ("All contents of memory card in slot A will be erased, continue?", "Format", "Cancel");
+			erase = WaitPromptChoiceAZ("All contents of memory card in slot A will be erased!", "Format", "Cancel");
 		}else{
-			erase = WaitPromptChoiceAZ("All contents of memory card in slot B will be erased, continue?", "Format", "Cancel");
+			erase = WaitPromptChoiceAZ("All contents of memory card in slot B will be erased!", "Format", "Cancel");
 		}
 
 		if (!erase)
