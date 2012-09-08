@@ -30,6 +30,13 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 |0Oื๘oท                         UPDATE HISTORY                        ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
+[What's New 1.2d - september 08, 2012 - By suloku]
+
+* Previous version couldn't raw backup if backup folder didn't exist in sd/usb
+* Added (double)overwrite prompt when restoring a savefile to memory card (Nano/Excelsiior's idea)
+* Updated graphics so raw mode commands are less cryptic (wii mode design based on JoostinOnline's for GCMM+)
+* Use DejavuSans as font (much better readability) from GCMM+ by Nano/Excelsiior
+
 [What's New 1.2c - september 06, 2012 - By suloku]
 
 * Raw backups are now named with the number of blocks: insted of Backup_*timestamp*.raw now it is 0059b_*timestamp.raw, 2043b_*timestamp.raw...
@@ -130,6 +137,9 @@ Users:
 * Memory cards can be extracted/inserted at will at the main menu screen. It is not recommended to change the card in any other screen.
 * Dolphin (wii/gc computer emulator) has a nice memory card manager, check it out!
 
+About usb devices:
+* Two of my usb devices won't work with GCMM, but those same devices make The Homebrew Channel crash. If you have problems try another usb device or an SD card.
+
 Developers:
 
 * LibOGC card functions works with time functions that use Epoch (seconds since jan 1, 1970) as reference, while GameCube works with seconds since jan 1, 2000). The difference is 946684800 seconds
@@ -194,26 +204,26 @@ Raw mode controls:
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 Currently gcmm uses:
 
-*DevkitPPC r26: http://sourceforge.net/projects/devkitpro/files/devkitPPC/
-*libOGC 1.8.11 git (2012-07-25): http://sourceforge.net/projects/devkitpro/files/libogc
+* DevkitPPC r26: http://sourceforge.net/projects/devkitpro/files/devkitPPC/
+* libOGC 1.8.11 git (2012-07-25): http://sourceforge.net/projects/devkitpro/files/libogc
 	note: it compiles and runs fine with 1.8.11 release
-*libfat 1.0.11: http://sourceforge.net/projects/devkitpro/files/libfat/
-*libFreeType 2.4.2 port: http://sourceforge.net/projects/devkitpro/files/portlibs/ppc/
+* libfat 1.0.11: http://sourceforge.net/projects/devkitpro/files/libfat/
+* libFreeType 2.4.2 port: http://sourceforge.net/projects/devkitpro/files/portlibs/ppc/
 
 ื—–ญ—–ญ—–ญ—–ญ –ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ— ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—-ญ—–ญ-–•ฌ
 |0Oื๘oท                           CREDITS                             ทo๘ืO0|
 `จ•จจจจจ จจจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจ จจจจจจจจจจจจจจจจจจจจ จจจจจจจจจจจจจ'
 
-*SoftDev for his contributions to the GC/WII scene
-*Costis for helping with some doubts, he's allways there
-*Masken for his code on raw data reading/writing
-*Justb & dsbomb for originally creating gcmm
-*CowTRobo & Samsom for very useful old sources
-*Tantric for pointing out that official memory cards won't work on wii mode, which encouraged me to continue gcmm as all my previous efforts where in vane due to using an official card for the testing.
-*tueidj, for his patches and very useful information and support. Official memory cards work due to his work.
-*dronesplitter for banner and icon implementation
-*PlabloACZ and Picachu025 for updating the source.
-*Nano, for inspiring me to finally working again on GCMM
+* SoftDev for his contributions to the GC/WII scene
+* Costis for helping with some doubts, he's allways there
+* Masken for his code on raw data reading/writing
+* Justb & dsbomb for originally creating gcmm
+* CowTRobo & Samsom for very useful old sources
+* Tantric for pointing out that official memory cards won't work on wii mode, which encouraged me to continue gcmm as all my previous efforts where in vane due to using an official card for the testing.
+* tueidj, for his patches and very useful information and support. Official memory cards work due to his work.
+* dronesplitter for banner and icon implementation
+* PlabloACZ and Picachu025 for updating the source.
+* Nano(Excelsiior), for inspiring me to finally working again on GCMM
 
 ื—–ญ—–ญ—–ญ—–ญ –ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ— ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—–ญ—-ญ—–ญ-–•ฌ
 |0Oื๘oท                                                               ทo๘ืO0|

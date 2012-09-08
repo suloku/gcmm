@@ -273,7 +273,7 @@ void SD_BackupMode ()
 	int bytestodo;
 
 	clearRightPane();
-	DrawText(390,130,"B a c k u p   M o d e");
+	DrawText(380,130,"B a c k u p   M o d e");
 	writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup to SD Card ") ;
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (MEM_CARD);
@@ -333,7 +333,7 @@ void SD_BackupModeAllFiles ()
 	char buffer[128];
 
 	clearRightPane();
-	DrawText(390,130," B a c k u p   A l l ");
+	DrawText(380,130," B a c k u p   A l l ");
 	writeStatusBar("Backing up all files.", "This may take a while.");
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (MEM_CARD);
@@ -380,7 +380,7 @@ void SD_RestoreMode ()
 	int selected;
 
 	clearRightPane();
-	DrawText(390,130,"R e s t o r e   M o d e");
+	DrawText(380,130,"R e s t o r e  M o d e");
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
 	files = SDGetFileList (1);
 	if (!files)
@@ -431,7 +431,7 @@ void SD_RawBackupMode ()
 	s32 writen = 0;
 	char msg[64];
 	clearRightPane();
-	DrawText(50, 230, "R A W   B a c k u p   M o d e");
+	DrawText(40, 230, "R A W   B a c k u p   M o d e");
 	writeStatusBar("Reading memory card... ", "");
 
 	if (BackupRawImage(MEM_CARD, &writen) == 1)
@@ -459,7 +459,7 @@ void SD_RawRestoreMode ()
 	int i;
 
 	clearRightPane();
-	DrawText(400,130,"R A W   R e s t o r e");
+	DrawText(380,130,"R A W   R e s t o r e");
 	DrawText(450,150,"M o d e");
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ");
 	
@@ -580,7 +580,7 @@ int main ()
 		case 700 : //Raw backup mode
 			if (have_sd)
 			{
-				DrawText(50, 230, "R A W   B a c k u p   M o d e");
+				DrawText(40, 230, "R A W   B a c k u p   M o d e");
 				SD_RawBackupMode();
 			}else
 			{
@@ -610,7 +610,8 @@ int main ()
 			VIDEO_WaitVSync (); 
 			if (CARD_Probe(MEM_CARD) > 0)
 			{
-				DrawText(50, 230, "F o r m a t   C a r d   M o d e");
+				DrawText(70, 230, "F o r m a t   C a r d");
+				DrawText(150, 250, "M o d e");
 				clearRightPane();
 				MC_FormatMode(MEM_CARD);
 				

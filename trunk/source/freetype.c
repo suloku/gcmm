@@ -684,7 +684,7 @@ void showCardInfo(int sel){
 	//clear right pane, but just the card info
 	int bgcolor = getcolour(84,174,211);
 	DrawBoxFilled(375, 165, 605, 390, bgcolor);
-	int y = 190, x = 375;
+	int y = 190, x = 378;
 	int err;
 	char txt[1024];
 	int i;
@@ -749,7 +749,7 @@ void showCardInfo(int sel){
 
 void showSaveInfo(int sel)
 {
-	int y = 160, x = 375, j;
+	int y = 160, x = 378, j;
 	char gamecode[5], company[3], txt[1024];
 
 	//clear right pane, but just the save info
@@ -1151,7 +1151,7 @@ void clearLeftPane()
 void clearRightPane()
 {
 	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(376, 112, 605, 390, bgcolor);
+	DrawBoxFilled(376, 112, 605, 395, bgcolor);
 }
 
 void DrawHLine (int x1, int x2, int y, int color)
