@@ -62,7 +62,8 @@ void getserial(u8 *serial)
 	}
 
 }
-	
+
+
 void ClearFlashID(s32 chn){
 	int i;
 	
@@ -84,6 +85,75 @@ void _write_callback(s32 chn,s32 result)
 void _erase_callback(s32 chn,s32 result)
 {
 	erase_data =1;
+}
+
+
+u64 Card_SerialNo(s32 slot)
+{
+	int err;
+	u32 SectorSize = 0;
+
+	CARD_Init(NULL,NULL);
+	EXI_ProbeReset();
+		
+	err = MountCard(slot);
+	if (err < 0)
+	{
+		WaitCardError("SerialNo", err);
+		return -1;			/*** Unable to mount the card ***/
+	}
+	
+	usleep(10*1000);
+	
+	err = CARD_GetSectorSize(slot,&SectorSize);
+	if(err < 0 )
+	{
+		WaitCardError("SerialNo Sectsize", err);
+		return -1;
+	}
+
+	CardBuffer = (u8*)memalign(32,SectorSize);
+	if(CardBuffer == NULL)
+	{
+		WaitPrompt("SerialNo: Failed to malloc memory.");
+		return -1;
+	}
+	s32 current_block = 0;
+	int read = 0;
+
+	while( 1 )
+	{
+		read_data = 0;
+
+		if( (err != 0) || current_block >= 1)
+			break;
+		err = __card_read(slot,0,SectorSize,CardBuffer+SectorSize*current_block,_read_callback);
+		if(err == 0)
+		{
+			while(read_data == 0)
+				usleep(1*1000); //sleep untill the read is done
+			read = read + SectorSize;
+			current_block++;
+
+		}
+		else
+		{
+			mem_free(CardBuffer);
+			WaitCardError("BakRaw __read", err);
+			return -1;
+		}
+	}
+	
+	//get the true serial
+	u64 serial1[4];
+	int i;
+    for (i=0;i<4;i++){
+        memcpy(&serial1[i], CardBuffer+(8*i), sizeof(u64));
+    }
+    u64 serialA = serial1[0]^serial1[1]^serial1[2]^serial1[3];
+
+	mem_free(CardBuffer);
+	return serialA;
 }
 
 //output is 29 char long

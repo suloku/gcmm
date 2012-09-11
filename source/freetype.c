@@ -693,7 +693,15 @@ void showCardInfo(int sel){
 	//START card image info START
 	//put block 1 in cardheader
 	SDLoadCardImageHeader((char*)filelist[sel]);
-	//get the serial
+	
+	//get the true serial
+	u64 serial1[4];
+    for (i=0;i<4;i++){
+        memcpy(&serial1[i], (u8*)&cardheader+(8*i), sizeof(u64));
+    }
+    u64 serialA = serial1[0]^serial1[1]^serial1[2]^serial1[3];
+	
+	//get the flash ID
 	getserial(imageserial);
 	
 	sprintf(txt, "Card image flash ID");
@@ -708,18 +716,19 @@ void showCardInfo(int sel){
 	DrawText(x,y,txt);
 	y+=20;
 	
+	sprintf(txt, "Serial N.: %016llX", serialA);
+	DrawText(x,y,txt);
+	y+=20;
+
 	sprintf(txt, "Size: %d blocks", (cardheader.SizeMb[1]*16)-5);
 	DrawText(x, y, txt);
 	y+=40;
 	//END card image info END
 
 	//START real card info START
-	err = MountCard(MEM_CARD);
-	if (err < 0)
-	{
-		WaitCardError("CardMount", err);
-		return;			/*** Unable to mount the card ***/
-	}
+
+	//In this call we mount the card, so we can later read the SRAM unscrambled flash ID
+	u64 cardserialno = Card_SerialNo(MEM_CARD);
 	
 	sramex = __SYS_LockSramEx();
 	__SYS_UnlockSramEx(0);
@@ -739,6 +748,10 @@ void showCardInfo(int sel){
 		sprintf(temp, "%02X", sramex->flash_id[MEM_CARD][i]);
 		strcat(txt, temp);
 	}
+	DrawText(x,y,txt);
+	y+=20;
+	
+	sprintf(txt, "Serial N.: %016llX", cardserialno);
 	DrawText(x,y,txt);
 	y+=20;
 	
