@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
 	<name>GCMM</name>
-	<coder>Suloku, PabloACZ, Pikachu025, dronesplitter</coder>
-	<version>1.2d</version>
-	<release_date>20120908000000</release_date>
+	<coder>Suloku</coder>
+	<version>1.3</version>
+	<release_date>20120914000000</release_date>
 	<short_description>Memory Card Manager</short_description> 
 	<long_description>A memory card manager for Wii/GC.
+
+Updated to latest libraries by PabloACZ
+Batch gci backup by Pikachu025
+Banner and Icon support by dronesplitter
+F-Zero and Phantasy Star Online support by Ralf
 
 Thanks to original mcbackup example code, Askot, dsbomb and justb.
 Special thanks to Costis, Masken, Tantric and tueidj.</long_description> 

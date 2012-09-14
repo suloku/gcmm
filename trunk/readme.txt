@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                         GCMM 1.2c                             ·oø×O0|
+|0O×øo·                         GCMM 1.3                             ·oø×O0|
 |                   http://code.google.com/p/gcmm                           |
 |                          (Under GPL License)                              |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
@@ -29,6 +29,15 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+[What's New 1.3 - september 14, 2012 - By suloku]
+
+* Shows card/image serial number in Raw Restore Mode
+* F-zero and Phantasy Star Online Ep I&II and Phantasy Star Online III savegames
+are patched uppon restoring so they will work on target card (by Ralf)
+
+Lot's of thanks to Ralf at gscentral.org forums
+http://board.gscentral.org/retro-hacking/53093.htm#post188949
 
 [What's New 1.2d - september 08, 2012 - By suloku]
 
@@ -104,20 +113,36 @@ Accepted PlabloACZ and Picachu025 modifications, with the following changes:
 * Add hotswapping (memory cards can be swapped, SD Gecko/SD/USB can't be swapped)
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                          LIMITATIONS                          ·oø×O0|
+|0O×øo·                 ABOUT SAVEGAMES AND RAW IMAGES                ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+        Raw Images
+--------------------------
+
+A raw image is a 1:1 copy of the memory card. It can only be restored to the card it was made from.
+Note that unofficial cards share the same Flash ID, which allows restoring raw images between unofficial cards (as long as they have the same size).
+
+These limitations can be solved with Raw Tools: http://code.google.com/p/gcmm/wiki/Raw_Tools
+
+For example:
+You can grab a 59 block card raw image from an unofficial card and modify it so you can restore it to your 1019 blocks official card, mantaining the serial number of the card so your protected savegames still work.
+
+note: as of GCMM 1.3 protected savegames can be restored to any card and they will work (thanks to Ralf!)
+
 
     Protected Savegames
 --------------------------
-Protected gamesaves will only be able to be restored on the card it was backuped from. Even though, some protected savegames will still not work as some save protection rely in the situation of the gamesave on the memory card.
 
-Protected savegames rely on the serial ID that is given to the memory card when it is formated. That's why they won't work in other cards and why they won't work on the same card if that has been formatted.
+This is just for information, as since GCMM 1.3 even serial protected savegames can be restored to any memory card.
 
-Restoring a raw image to a diferent card won't work. Please note that all unofficial cards share the same Flash ID (serial ID), allowing raw image restoring between unofficial cards (as long as they are the same size).
+There are two kinds of protected savegames:
 
-Known protected savegames:
-* F-zero GX
-* Phantasy Star Online (all of the games)
+* Permision protected savegames: this savegames can't be moved/copied from the Gamecube/Wii memory card manager. These saves can be backed up and restored without problems by GCMM
+
+* Serial protected savegames: this savegames can't be moved/copied from the Gamecube/Wii memory card manager and will only work in the card they were backupped from. This protected savegames rely on the serial number that is given to the memory card when it is formated. That's why they won't work in other cards and why they won't work on the same card if that has been formatted.
+
+Restoring a raw image to a diferent card won't work, it has to be the same card (it will work even if the card was formatted). Please note that all unofficial cards share the same Flash ID (which is different from the serial number), allowing raw image restoring between unofficial cards (as long as they are the same size).
+
 
     Other savegame formats
 ----------------------------
