@@ -620,6 +620,13 @@ s32 __card_getstatusex(s32 chn,s32 fileno,struct card_direntry *entry);
 */
 s32 __card_setstatusex(s32 chn,s32 fileno,struct card_direntry *entry);
 
+/* CARD_GetSerialNo                                        */
+/*                                                         */
+/* serial1 & serial2: Encrypted memory card serial numbers */
+/* chn: Memory card port                                   */
+/* ret: Error code                                         */
+s32 CARD_GetSerialNo(s32 chn,u32 *serial1,u32 *serial2);
+
 // Raw read and write functions
 s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
 s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);

@@ -188,6 +188,7 @@ static s32 __card_updatedir(s32 chn,cardcallback callback);
 static s32 __card_writepage(s32 chn,cardcallback callback);
 s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
 static s32 __card_onreset(s32 final);
+s32 CARD_GetSerialNo(s32 chn,u32 *serial1,u32 *serial2);
 
 static sys_resetinfo card_resetinfo = {
 	{},
@@ -3198,4 +3199,32 @@ s32 CARD_SetGamecode(const char *gamecode)
 	_CPU_ISR_Restore(level);
 	
 	return CARD_ERROR_READY;
+}
+
+//The following code is made by Ralf at GSCentral forums (gscentral.org)
+//http://board.gscentral.org/retro-hacking/53093.htm#post188949
+
+/***********************************************************/
+/* CARD_GetSerialNo                                        */
+/*                                                         */
+/* serial1 & serial2: Encrypted memory card serial numbers */
+/* chn: Memory card port                                   */
+/* ret: Error code                                         */
+/***********************************************************/
+//note the full serial number is an u64 (serial1+serial2)
+s32 CARD_GetSerialNo(s32 chn,u32 *serial1,u32 *serial2)
+{
+	s32 ret;
+	card_block *card = NULL;
+	struct card_header *header;
+
+	if(chn<EXI_CHANNEL_0 || chn>=EXI_CHANNEL_2) return CARD_ERROR_FATAL_ERROR;
+	if((ret=__card_getcntrlblock(chn,&card))<0) return ret;
+
+	header = card->workarea;
+
+	*serial1 = header->serial[0]^header->serial[2]^header->serial[4]^header->serial[6];
+	*serial2 = header->serial[1]^header->serial[3]^header->serial[5]^header->serial[7];
+
+	return __card_putcntrlblock(card,ret);
 }
