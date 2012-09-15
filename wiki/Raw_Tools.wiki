@@ -5,7 +5,7 @@
 
 
                 ---------------------------
-                  RawTools by suloku 2012
+                  RawTools by suloku 2012: http://code.google.com/p/gcmm/downloads/detail?name=RawTools.rar&can=2&q=
                 ---------------------------
 
 This package contains a set of tools for tweaking memory card raw images. Please refer to each tool's readme file for more specific information.
