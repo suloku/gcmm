@@ -325,14 +325,12 @@ int CardReadFileHeader (int slot, int id)
 	}
 
 	//Find how many icons are present
-	numicons = 8;
+	numicons = 0;
 	check = gci.icon_fmt;
 	for (i = 0; i < 8; i++) {
-		if (check & 0xC000)
-			break;
-		else
-			numicons--;
-		check = check << 2;
+		 if (check & 3)
+				numicons++;
+		 check = check >> 2;
 	}
 
 	/***
