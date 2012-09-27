@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ogc/lwp_watchdog.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "bannerload.h"
@@ -39,10 +40,13 @@ extern int mode;
 extern s32 MEM_CARD;
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
-extern u8 icondata[1024] ATTRIBUTE_ALIGN (32);
-extern u16 icondataRGB[1024] ATTRIBUTE_ALIGN (32);
-extern u16 tlut[256] ATTRIBUTE_ALIGN (32);
+extern u8 icondata[8][1024] ATTRIBUTE_ALIGN (32);
+extern u16 icondataRGB[8][1024] ATTRIBUTE_ALIGN (32);
+extern u16 tlut[9][256] ATTRIBUTE_ALIGN (32);
 extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
+extern int numicons;
+extern int icontable[8];
+extern int lasticon;
 extern Header cardheader;
 extern s32 memsize, sectsize;
 extern syssramex *sramex;
@@ -59,6 +63,7 @@ extern int screenheight;
 extern u32 *xfb[2];
 extern int whichfb;
 extern GXRModeObj *vmode;
+extern int vmode_60hz;
 
 /*** File listings ***/
 extern card_dir CardList[];
@@ -790,7 +795,11 @@ void showSaveInfo(int sel)
 		// struct gci now contains header info
 
 	}
-
+	
+	//Draw nice gradient background for banner and icon
+	DrawBox (410, 163, 410+160, 163+39, getcolour (255,255,255));
+	DrawBoxFilledGradient(412, 164, (410+159), (164+37), BLUECOL, PURPLECOL);
+	
 	//Show icon and banner
 	if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_RGB) {
 		bannerloadRGB(bannerdata);
@@ -798,11 +807,16 @@ void showSaveInfo(int sel)
 	else if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_CI) {
 		bannerloadCI(bannerdataCI, tlutbanner);
 	}
-	if (gci.icon_fmt&0x01) {
-		iconloadCI(icondata, tlut);
+	//Show first icon
+	if ((gci.icon_fmt&CARD_ICON_MASK)== 1) {
+		//CI with shared palette
+		iconloadCI(icondata[0], tlut[8]);
 	}
-	else {
-		iconloadRGB(icondataRGB);
+	else if ((gci.icon_fmt&CARD_ICON_MASK)== 3) {
+		iconloadCI(icondata[0], tlut[0]);
+	}
+	else if ((gci.icon_fmt&CARD_ICON_MASK)== 2) {
+		iconloadRGB(icondataRGB[0]);
 	}
     
 	/*** Display relevant info for this save ***/
@@ -900,10 +914,12 @@ void showSaveInfo(int sel)
 	DrawText(x, y, txt);
 	//y += 20;
 
+#ifdef DEBUG_VALUES
 	/*** Uncomment to print some debug info ***/
-	//y+=40;
-	//sprintf(comment2, "%x %x %x", gci.icon_addr, gci.icon_fmt, gci.banner_fmt);
-	//DrawText(x, y, comment2);
+	y+=20;
+	sprintf(comment2, "%x %x %x %d", gci.icon_addr, gci.icon_fmt, gci.banner_fmt, numicons);
+	DrawText(x, y, comment2);
+#endif
 
 }
 
@@ -1039,6 +1055,32 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 }
 */
 
+static u8 CalculateFrameRate() 
+{
+    static u8 frameCount = 0;
+    static u32 lastTime;
+    static u8 FPS = 0;
+    u32 currentTime = ticks_to_millisecs(gettime());
+
+    frameCount++;
+    if(currentTime - lastTime > 1000) {
+        lastTime = currentTime;
+        FPS = frameCount;
+        frameCount = 0;
+    }
+    return FPS;
+}
+
+int getdurationmilisecs(u16 icon_speed, int index)
+{
+	int speed = ((icon_speed >> (2*index))&CARD_SPEED_MASK)*4;
+	
+	if(vmode_60hz){
+		return 1000/(60/speed);
+	}else{
+		return 1000/(50/speed);
+	}
+} 
 
 /****************************************************************************
 * ShowSelector
@@ -1059,14 +1101,115 @@ int ShowSelector (int saveinfo)
 	int quit = 0;
 	int offset = 0;//further determines redraw conditions
 	int selection = 0;
+	//animated icon display vars
+	int curricon = 0;
+	int iconwait = 0;
+	int reverse = 0;
 
+	u64 lasttime, currtime;
+	lasttime = ticks_to_millisecs(gettime());
+
+#ifdef DEBUG_VALUES
+	u8 fps = 0;
+	char test[1024];
+#endif
+	
 	while (quit == 0)
 	{
+
+		currtime = ticks_to_millisecs(gettime());
+#ifdef DEBUG_VALUES		
+		fps = CalculateFrameRate();
+#endif
 		if (redraw)
 		{
+			//clear buffers
+			memset((u8*)bannerdata, 0, CARD_BANNER_W*CARD_BANNER_H);
+			memset((u8*)bannerdataCI, 0, CARD_BANNER_W*CARD_BANNER_H);
+			memset((u8*)icondata, 0, 8*1024);
+			memset((u8*)icondataRGB, 0, 8*2048);
+			memset((u8*)tlut, 0, 9*512);
+			memset((u8*)tlutbanner, 0, 512);
+			
 			ShowFiles (offset, selection, upordown, saveinfo);
+			
+			//reinit variables
 			redraw = 0;
+			curricon = 1;	
+			reverse = 0;
+			iconwait = 1;
+			lasttime = ticks_to_millisecs(gettime());
+			
 		}
+#ifdef DEBUG_VALUES		
+		sprintf (test, "FPS%d numicons%d CI%d LI%d iTiw%d iw%d anim%d speed%d", fps, numicons, curricon, lasticon, icontable[iconwait],iconwait, CHECK_BIT(gci.banner_fmt,2), ((gci.icon_speed >> (2*iconwait))&CARD_SPEED_MASK)*4 );
+		ShowAction(test);
+#endif
+	
+		if (numicons > 1){
+			
+			if((currtime - lasttime) >= getdurationmilisecs(gci.icon_speed, iconwait) ){
+				//If there's an icon show it, if not just wait
+				//if (((gci.icon_speed >> (2*iconwait))&CARD_SPEED_MASK)){
+				if (icontable[iconwait]){
+					if ( ((gci.icon_fmt >> (2*iconwait))&CARD_ICON_MASK)== 1) {
+						//CI with shared palette
+						iconloadCI(icondata[curricon], tlut[8]);
+					}
+					else if ( ((gci.icon_fmt >> (2*iconwait))&CARD_ICON_MASK)== 3) {
+						iconloadCI(icondata[curricon], tlut[curricon]);
+					}
+					else if ( ((gci.icon_fmt >> (2*iconwait))&CARD_ICON_MASK)== 2) {
+						iconloadRGB(icondataRGB[curricon]);
+					}
+					ShowScreen();
+					//Check animation type (ping pong style if true)
+					if (CHECK_BIT(gci.banner_fmt,2)){
+						if (reverse) curricon --;
+						if (!reverse) curricon ++;
+						//Bounce back
+						if (curricon >= numicons){
+							reverse = 1;
+							curricon = numicons -2;
+						}
+						if (curricon < 0){
+							reverse = 0;
+							curricon = 1;
+						}
+					}else{
+						curricon ++;
+						//start from first icon
+						if (curricon >= numicons){
+							curricon = 0;
+						}
+					}					
+				}
+	
+				//Each bit pair in gci.icon_speed states for an icon's speed.
+				//Blank bit pairs can be used to delay the animation
+				//Check animation type (ping pong style if true)
+				if (CHECK_BIT(gci.banner_fmt,2)){
+					if (reverse) iconwait --;
+					if (!reverse) iconwait ++;
+					//Bounce back
+					if (iconwait > lasticon){
+						iconwait = lasticon -1;
+					}
+					if (iconwait < 0){
+						iconwait = 1;
+					}
+				}else{
+					iconwait ++;
+					if (iconwait > lasticon){
+						iconwait = 0;
+					}
+				}
+	
+				lasttime = currtime;
+			}
+		
+		}
+		
 		p = PAD_ButtonsDown (0);
 #ifdef HW_RVL
 		wp = WPAD_ButtonsDown (0);
@@ -1140,7 +1283,8 @@ int ShowSelector (int saveinfo)
 				offset = 0;
 			}
 			redraw = 1;
-		}
+		}		
+
 	}
 	return selection;
 }
@@ -1206,12 +1350,19 @@ void DrawBoxFilled (int x1, int y1, int x2, int y2, int color)
 		DrawHLine (x1, x2, h, color);
 }
 
+void DrawBoxFilledGradient (int x1, int y1, int x2, int y2, u32 color1, u32 color2)
+{
+	int r1 = (color1&0x0000FF) >> 0;	int g1 = (color1&0x00FF00) >> 8;	int b1 = (color1&0xFF0000) >> 16;
+	int r2 = (color2&0x0000FF) >> 0;	int g2 = (color2&0x00FF00) >> 8;	int b2 = (color2&0xFF0000) >> 16;
 
-
-
-
-
-
-
-
-
+	int r,g,b;
+	float p;
+	int h;
+	for (h = y1; h <= y2; h++){
+		p = ((float)(y2-h))/((float)(y2-y1));
+		r = (r1 * p) + (r2 * (1 - p));
+		g = (g1 * p) + (g2 * (1 - p));
+		b = (b1 * p) + (b2 * (1 - p));
+		DrawHLine (x1, x2, h, getcolour(r,g,b));
+	}
+}

@@ -31,10 +31,13 @@ extern Header cardheader;
 extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
-extern u8 icondata[1024] ATTRIBUTE_ALIGN (32);
-extern u16 icondataRGB[1024] ATTRIBUTE_ALIGN (32);
-extern u16 tlut[256] ATTRIBUTE_ALIGN (32);
+extern u8 icondata[8][1024] ATTRIBUTE_ALIGN (32);
+extern u16 icondataRGB[8][1024] ATTRIBUTE_ALIGN (32);
+extern u16 tlut[9][256] ATTRIBUTE_ALIGN (32);
 extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
+extern int numicons;
+extern int icontable[8];
+extern int lasticon;
 extern u8 filelist[1024][1024];
 extern u32 maxfile;
 extern GCI gci;
@@ -250,8 +253,8 @@ int SDLoadMCImageHeader(char *sdfilename)
 	//int offset = 0;
 	//int bytesToRead = 0;
 	long bytesToRead = 0;
-	int numicons, i;
-	u16 check;
+	int i;
+	u16 check, check2;
 
 	/*** Clear the work buffers ***/
 	memset (FileBuffer, 0, MAXFILEBUFFER);
@@ -388,76 +391,59 @@ int SDLoadMCImageHeader(char *sdfilename)
 	memcpy (&gci, FileBuffer, sizeof (GCI));
 #endif
 
-	//Find how many icons are present
-	numicons = 8;
-	check = gci.icon_fmt;
-	for (i = 0; i < 8; i++) {
-		if (check & 0xC000)
-			break;
-		else
-			numicons--;
-		check = check << 2;
-	}
-	
 	/***
 		Get the Banner/Icon Data from the SD save file.
 		Very specific if/else setup to avoid rewinds
 	***/
 	rewind(handle);
 	fseek(handle, MCDATAOFFSET + OFFSET + gci.icon_addr, SEEK_SET);
+
 	/*** Get the Banner/Icon Data from the save file ***/
 	if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_RGB) {
 		//RGB banners are 96*32*2 in size
 		fread (bannerdata, 1, 6144, handle);
-		//this checks for CI icon format
-		if (gci.icon_fmt&0x01) {
-			fread(icondata, 1, 1024, handle);
-			if ((gci.icon_fmt&CARD_ICON_MASK) == 1) {
-				fseek(handle, 1024*(numicons-1), SEEK_CUR);
-				fread(tlut, 1, 512, handle);
-			}
-			else if ((gci.icon_fmt&CARD_ICON_MASK) == 3) {
-				fread(tlut, 1, 512, handle);
-			}
-		}
-		//if not CI, read in RGB 16 bit icon
-		else {
-			fread(icondataRGB, 1, 2048, handle);
-		}
 	}
 	else if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_CI) {
 		fread(bannerdataCI, 1, 3072, handle);
 		fread(tlutbanner, 1, 512, handle);
-		if (gci.icon_fmt&0x01) {
-			fread(icondata, 1, 1024, handle);
-			if ((gci.icon_fmt&CARD_ICON_MASK) == 1) {
-				fseek(handle, 1024*(numicons-1), SEEK_CUR);
-				fread(tlut, 1, 512, handle);
-			}
-			else if ((gci.icon_fmt&CARD_ICON_MASK) == 3) {
-				fread(tlut, 1, 512, handle);
-			}
-		}
-		else {
-			fread(icondataRGB, 1, 2048, handle);
-		}
 	}
-	//there is no banner present so we just read for icon
-	else {
-		if (gci.icon_fmt&0x01) {
-			fread(icondata, 1, 1024, handle);
-			if ((gci.icon_fmt&CARD_ICON_MASK) == 1) {
-				fseek(handle, 1024*(numicons-1), SEEK_CUR);
-				fread(tlut, 1, 512, handle);
+	//Icon data
+	check = gci.icon_fmt;
+	check2 = gci.icon_speed;
+	int shared_pal = 0;
+	lasticon = 0;
+	numicons = 0;
+	for (i=0;i<8;i++){
+		icontable[i] = 0;
+		if ((check2&CARD_ICON_MASK)){
+			lasticon=i;
+			//count the number of icons
+			if (check & CARD_ICON_MASK){
+					numicons++;
+					icontable[i]=1;
+			}	
+			//CI with shared palette
+			if ((check&CARD_ICON_MASK) == 1) {
+				fread(icondata[numicons-1], 1, 1024, handle);
+				shared_pal = 1;
 			}
-			else if ((gci.icon_fmt&CARD_ICON_MASK) == 3) {
-				fread(tlut, 1, 512, handle);
+			//CI with palette after the icon
+			else if ((check&CARD_ICON_MASK) == 3)
+			{
+				fread(icondata[numicons-1], 1, 1024, handle);
+				fread(tlut[numicons-1], 1, 512, handle);
+			}
+			//RGB 16 bit icon
+			else if ((check&CARD_ICON_MASK) == 2)
+			{
+					fread(icondataRGB[numicons-1], 1, 2048, handle);
 			}
 		}
-		else {
-			fread(icondataRGB, 1, 2048, handle);
-		}
+		check = check >> 2;
+		check2 = check2 >> 2;
 	}
+	//Get the shared palette
+	if (shared_pal) fread(tlut[8], 1, 512, handle);
 
 	//Get the comment
 	rewind(handle);
