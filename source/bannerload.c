@@ -29,8 +29,31 @@ u8 convert4to8(u16 v) {
 	return (v<<4)|v;
 }
 
-u32 Decode5A3(u16 val) {
+u32 Decode5A3(u16 val, int row) {
 	static u32 bg_color = 0x00000000;
+	
+	//the following code relies in DrawBoxFilledGradient() being called
+	//in showSaveInfo() in freetype.c to have these colors and being 37 pixel height (y2-y1 = 37)
+	//also, icon and banner must be displayed over it
+	//Blue color 5 10 140
+	//Purple color 55 15 95
+	int r3,g3,b3;
+	int r1 = (BLUECOL&0x0000FF) >> 0;	int g1 = (BLUECOL&0x00FF00) >> 8;	int b1 = (BLUECOL&0xFF0000) >> 16;
+	int r2 = (PURPLECOL&0x0000FF) >> 0;	int g2 = (PURPLECOL&0x00FF00) >> 8;	int b2 = (PURPLECOL&0xFF0000) >> 16;
+	
+	float p;
+	int temp = 0;
+	//correct icon displacement over the gradient box
+	temp = row +3;
+	
+	p = (float)((float)(37-temp)/(float)37.0);
+	r3 = (r1 * p) + (r2 * (1 - p));
+	g3 = (g1 * p) + (g2 * (1 - p));
+	b3 = (b1 * p) + (b2 * (1 - p));
+	
+	bg_color = (b3<<16)|(g3<<8)|r3;
+
+
 
 	int r, g, b, a;
 	//use 0x8000 as a bit mask
@@ -59,7 +82,8 @@ void bannerloadRGB(u16 *gamebanner) {
 	u8 m_pImage[CARD_BANNER_H*CARD_BANNER_W*3];
 	
 	src = gamebanner;
-	
+	int row=0;
+	int count = 0;
 	for (y = 0; y < CARD_BANNER_H; y += 4)
 	{
 		for (x = 0; x < CARD_BANNER_W; x += 4)
@@ -69,11 +93,19 @@ void bannerloadRGB(u16 *gamebanner) {
 				for (ix = 0; ix < 4; ix++)
 				{
 					//Decode for straight RGB
-					RGBA = Decode5A3(src[ix]);
+					RGBA = Decode5A3(src[ix], row);
 					dst[ (y + iy) * CARD_BANNER_W + (x + ix)] = RGBA;
 				}
 			}
+			//keep track of pixel rows
+			count+=4;
+			if (count == CARD_BANNER_W/4)
+			{
+				row++;
+				count = 0;
+			}	
 		}
+		
 	}
 	
 	//Build the final array; 3 pixel values = 3*3072 or 9216 size bmp info
@@ -100,7 +132,8 @@ void bannerloadCI(u8 *gamebanner, u16* lookupdata) {
 	u8 temp;
 	
 	src = gamebanner;
-	
+	int row = 0;
+	int count = 0;
 	for (y = 0; y < CARD_BANNER_H; y += 4)
 	{
 		for (x = 0; x < CARD_BANNER_W; x += 8)
@@ -111,10 +144,17 @@ void bannerloadCI(u8 *gamebanner, u16* lookupdata) {
 				{
 					//Decode for straight RGB
 					temp = src[ix];
-					dst[(y + iy) * CARD_BANNER_W + (x + ix)] = Decode5A3(lookupdata[temp]);
+					dst[(y + iy) * CARD_BANNER_W + (x + ix)] = Decode5A3(lookupdata[temp], row);
 				}
 			}
+			count+=8;
+			if (count == CARD_BANNER_W/4)
+			{
+				row++;
+				count = 0;
+			}	
 		}
+		
 	}
 	
 	//Build the final array; 3 pixel values = 3*3072 or 9216 size bmp info
@@ -140,7 +180,8 @@ void iconloadRGB(u16 *gameicon) {
 	u8 m_pImage[CARD_ICON_H*CARD_ICON_W*3];
 	
 	src = gameicon;
-	
+	int row = 0;
+	int count = 0;
 	for (y = 0; y < CARD_ICON_H; y += 4)
 	{
 		for (x = 0; x < CARD_ICON_W; x += 4)
@@ -150,9 +191,15 @@ void iconloadRGB(u16 *gameicon) {
 				for (ix = 0; ix < 4; ix++)
 				{
 					//Decode for straight RGB
-					dst[(y + iy) * CARD_ICON_W + (x + ix)] = Decode5A3(src[ix]);
-				}
+					dst[(y + iy) * CARD_ICON_W + (x + ix)] = Decode5A3(src[ix], row);				
+				}				
 			}
+			count++;
+			if (count % 2 == 0)
+			{
+				row++;
+				count = 0;
+			}	
 		}
 	}
 	
@@ -180,7 +227,8 @@ void iconloadCI(u8 *gameicon, u16* lookupdata) {
 	u8 temp;
 	
 	src = gameicon;
-	
+	int row = 0;
+	int count = 0;
 	for (y = 0; y < CARD_ICON_H; y += 4)
 	{
 		for (x = 0; x < CARD_ICON_W; x += 8)
@@ -191,9 +239,15 @@ void iconloadCI(u8 *gameicon, u16* lookupdata) {
 				{
 					//Decode for straight RGB
 					temp = src[ix];
-					dst[(y + iy) * CARD_ICON_W + (x + ix)] = Decode5A3(lookupdata[temp]);
+					dst[(y + iy) * CARD_ICON_W + (x + ix)] = Decode5A3(lookupdata[temp], row);
 				}
 			}
+			count+=CARD_BANNER_W/16;
+			if (count % 2 == 0)
+			{
+				row++;
+				count = 0;
+			}				
 		}
 	}
 	
@@ -205,7 +259,7 @@ void iconloadCI(u8 *gameicon, u16* lookupdata) {
 		//g pixel
 		m_pImage[y * 3 + 1] = (dst[y] & 0x00FF00) >>  8;
 		//r pixel
-		m_pImage[y * 3 + 2] = (dst[y] & 0x0000FF) >>  0;
+		m_pImage[y * 3 + 2] = (dst[y] & 0x0000FF) >>  0;	
 	}
 	
 	ShowIcon(m_pImage);

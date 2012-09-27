@@ -9,6 +9,15 @@
 	(http://dolphin-emu.googlecode.com/svn/trunk/)
 ***/
 
+//this is the background color in RGB for alpha blending
+//values are BGR
+//Blue color 5 10 140
+//Purple color 55 15 95
+#define BLUECOL ((140<<16)|(10<<8)|5)
+#define PURPLECOL ((95<<16)|(15<<8)|55)
+//This is the blueish background color
+//#define BLENDCOL ((211<<16)|(174<<8)|84)
+
 //16-bit banner data function
 void bannerloadRGB(u16*);
 //8-bit banner data function

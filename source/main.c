@@ -42,7 +42,7 @@ GXRModeObj *vmode;		/*** Graphics Mode Object ***/
 u32 *xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;		/*** Frame buffer toggle ***/
 int screenheight;
-static int vmode_60hz = 0;
+int vmode_60hz = 0;
 
 extern u8 filelist[1024][1024];
 extern bool offsetchanged;
@@ -119,18 +119,35 @@ static int initFAT(int device)
 		}	
 	}
 #else
-	__io_gcsda.startup();
-	if (!__io_gcsda.isInserted())
+	if (!device){
+		__io_gcsda.startup();
+		if (!__io_gcsda.isInserted())
+		{
+			ShowAction ("No SD Gecko inserted! Insert it in slot A please");
+			sleep(1);	
+			return 0;
+		}
+		if (!fatMountSimple ("fat", &__io_gcsda))
+		{
+			ShowAction("Error Mounting SD fat!");
+			sleep(1);
+			return 0;
+		}
+	}else
 	{
-		ShowAction ("No SD Gecko inserted! Insert it in slot A please");
-		sleep(1);	
-		return 0;
-	}
-	if (!fatMountSimple ("fat", &__io_gcsda))
-	{
-		ShowAction("Error Mounting SD fat!");
-		sleep(1);
-		return 0;
+		__io_gcsdb.startup();
+		if (!__io_gcsdb.isInserted())
+		{
+			ShowAction ("No SD Gecko inserted! Insert it in slot B please");
+			sleep(1);	
+			return 0;
+		}
+		if (!fatMountSimple ("fat", &__io_gcsdb))
+		{
+			ShowAction("Error Mounting SD fat!");
+			sleep(1);
+			return 0;
+		}
 	}
 #endif
 	return 1;
@@ -145,7 +162,10 @@ void deinitFAT()
 	__io_wiisd.shutdown();
 	__io_usbstorage.shutdown();
 #else
-	__io_gcsda.shutdown();
+	if(MEM_CARD)
+		__io_gcsda.shutdown();
+	if(!MEM_CARD)
+		__io_gcsdb.shutdown();
 #endif
 }
 
@@ -519,7 +539,8 @@ int main ()
 	initialise_power();
 	have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT 32 USB device?", "USB", "SD"));
 #else
-	have_sd = initFAT(0);
+	MEM_CARD ^= WaitPromptChoice ("Please select the slot where SD Gecko is inserted", "SLOT B", "SLOT A");
+	have_sd = initFAT(MEM_CARD);
 #endif
 
 

@@ -12,6 +12,12 @@
 #define RESTORE_MODE 400
 //#define RELOAD_MODE 500 /* Free mode */
 
+//pos 0 is less significant bit and pos 7 the most significant
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
+
+//Uncomment this definiton to show some debug values on screen
+//#define DEBUG_VALUES
+
 #ifdef HW_RVL
 void initialise_power() ;
 #endif
@@ -38,6 +44,7 @@ void DrawHLine (int x1, int x2, int y, int color);
 void DrawVLine (int x, int y1, int y2, int color);
 void DrawBox (int x1, int y1, int x2, int y2, int color);
 void DrawBoxFilled (int x1, int y1, int x2, int y2, int color);
+void DrawBoxFilledGradient (int x1, int y1, int x2, int y2, u32 color1, u32 color2);
 
 
 #endif
