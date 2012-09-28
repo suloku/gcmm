@@ -352,34 +352,41 @@ int CardReadFileHeader (int slot, int id)
 	numicons = 0;
 	for (i=0;i<8;i++){
 		icontable[i] = 0;
-		if ((check2&CARD_ICON_MASK)){
-			lasticon=i;
-			//count the number of icons
-			if (check & CARD_ICON_MASK){
-					numicons++;
-					icontable[i]=1;
-			}	
-			//CI with shared palette
-			if ((check&CARD_ICON_MASK) == 1) {
-				memcpy(icondata[numicons-1], offset, 1024);
-				offset += 1024;
-				shared_pal = 1;
-			}
-			//CI with palette after the icon
-			else if ((check&CARD_ICON_MASK) == 3)
-			{
-				memcpy(icondata[numicons-1], offset, 1024);
-				offset += 1024;			
-				memcpy(tlut[numicons-1], offset, 512);
-				offset += 512;				
-			}
-			//RGB 16 bit icon
-			else if ((check&CARD_ICON_MASK) == 2)
-			{
-				memcpy(icondataRGB[numicons-1], offset, 2048);
-				offset += 2048;			
-			}
+		//Animation speed is mandatory to be set even for a singe icon
+		//When a speed is 0 there are no more icons
+		//Some games may have bits set after the "blank icon" both in
+		//speed (Baten Kaitos) and format (Wario Ware Inc.) bytes, which are just garbage
+		if (!(check2&CARD_ICON_MASK)){
+			//There are no more icons
+			lasticon=-1;
+			break; 
 		}
+		//count the number of icons
+		if (check & CARD_ICON_MASK){
+				numicons++;
+				icontable[i]=1;
+		}	
+		//CI with shared palette
+		if ((check&CARD_ICON_MASK) == 1) {
+			memcpy(icondata[numicons-1], offset, 1024);
+			offset += 1024;
+			shared_pal = 1;
+		}
+		//CI with palette after the icon
+		else if ((check&CARD_ICON_MASK) == 3)
+		{
+			memcpy(icondata[numicons-1], offset, 1024);
+			offset += 1024;			
+			memcpy(tlut[numicons-1], offset, 512);
+			offset += 512;				
+		}
+		//RGB 16 bit icon
+		else if ((check&CARD_ICON_MASK) == 2)
+		{
+			memcpy(icondataRGB[numicons-1], offset, 2048);
+			offset += 2048;			
+		}
+			
 		check = check >> 2;
 		check2 = check2 >> 2;
 	}

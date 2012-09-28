@@ -415,30 +415,38 @@ int SDLoadMCImageHeader(char *sdfilename)
 	numicons = 0;
 	for (i=0;i<8;i++){
 		icontable[i] = 0;
-		if ((check2&CARD_ICON_MASK)){
-			lasticon=i;
-			//count the number of icons
-			if (check & CARD_ICON_MASK){
-					numicons++;
-					icontable[i]=1;
-			}	
-			//CI with shared palette
-			if ((check&CARD_ICON_MASK) == 1) {
-				fread(icondata[numicons-1], 1, 1024, handle);
-				shared_pal = 1;
-			}
-			//CI with palette after the icon
-			else if ((check&CARD_ICON_MASK) == 3)
-			{
-				fread(icondata[numicons-1], 1, 1024, handle);
-				fread(tlut[numicons-1], 1, 512, handle);
-			}
-			//RGB 16 bit icon
-			else if ((check&CARD_ICON_MASK) == 2)
-			{
-					fread(icondataRGB[numicons-1], 1, 2048, handle);
-			}
+		//Animation speed is mandatory to be set even for a singe icon
+		//When a speed is 0 there are no more icons
+		//Some games may have bits set after the "blank icon" both in
+		//speed (Baten Kaitos) and format (Wario Ware Inc.) bytes, which are just garbage
+		if (!(check2&CARD_ICON_MASK)){
+			//There are no more icons
+			lasticon=-1;
+			break; 
 		}
+			
+		//count the number of icons
+		if (check & CARD_ICON_MASK){
+				numicons++;
+				icontable[i]=1;
+		}	
+		//CI with shared palette
+		if ((check&CARD_ICON_MASK) == 1) {
+			fread(icondata[numicons-1], 1, 1024, handle);
+			shared_pal = 1;
+		}
+		//CI with palette after the icon
+		else if ((check&CARD_ICON_MASK) == 3)
+		{
+			fread(icondata[numicons-1], 1, 1024, handle);
+			fread(tlut[numicons-1], 1, 512, handle);
+		}
+		//RGB 16 bit icon
+		else if ((check&CARD_ICON_MASK) == 2)
+		{
+				fread(icondataRGB[numicons-1], 1, 2048, handle);
+		}
+		
 		check = check >> 2;
 		check2 = check2 >> 2;
 	}

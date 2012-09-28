@@ -53,8 +53,6 @@ u32 Decode5A3(u16 val, int row) {
 	
 	bg_color = (b3<<16)|(g3<<8)|r3;
 
-
-
 	int r, g, b, a;
 	//use 0x8000 as a bit mask
 	if ((val & 0x8000)) {
