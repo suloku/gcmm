@@ -45,8 +45,8 @@ extern u16 icondataRGB[8][1024] ATTRIBUTE_ALIGN (32);
 extern u16 tlut[9][256] ATTRIBUTE_ALIGN (32);
 extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
 extern int numicons;
-extern int icontable[8];
-extern int lasticon;
+extern int frametable[8];
+extern int lastframe;
 extern Header cardheader;
 extern s32 memsize, sectsize;
 extern syssramex *sramex;
@@ -1054,7 +1054,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
     }
 }
 */
-
+#ifdef DEBUG_VALUES	
 static u8 CalculateFrameRate() 
 {
     static u8 frameCount = 0;
@@ -1070,7 +1070,7 @@ static u8 CalculateFrameRate()
     }
     return FPS;
 }
-
+#endif
 int getdurationmilisecs(u16 icon_speed, int index)
 {
 	int speed = ((icon_speed >> (2*index))&CARD_SPEED_MASK)*4;
@@ -1102,8 +1102,7 @@ int ShowSelector (int saveinfo)
 	int offset = 0;//further determines redraw conditions
 	int selection = 0;
 	//animated icon display vars
-	int curricon = 0;
-	int iconwait = 0;
+	int currframe = 0;
 	int reverse = 0;
 
 	u64 lasttime, currtime;
@@ -1135,73 +1134,52 @@ int ShowSelector (int saveinfo)
 			
 			//reinit variables
 			redraw = 0;
-			curricon = 1;	
 			reverse = 0;
-			iconwait = 1;
+			currframe = 1;
 			lasttime = ticks_to_millisecs(gettime());
 			
 		}
 #ifdef DEBUG_VALUES		
-		sprintf (test, "FPS%d numicons%d CI%d LI%d iTiw%d iw%d anim%d speed%d", fps, numicons, curricon, lasticon, icontable[iconwait],iconwait, CHECK_BIT(gci.banner_fmt,2), ((gci.icon_speed >> (2*iconwait))&CARD_SPEED_MASK)*4 );
+		sprintf (test, "FPS%d numicons%d CF%d LF%d FT%d animtype%d speed%d", fps, numicons, currframe, lastframe, frametable[currframe], CHECK_BIT(gci.banner_fmt,2), ((gci.icon_speed >> (2*currframe))&CARD_SPEED_MASK)*4 );
 		ShowAction(test);
 #endif
 	
 		if (numicons > 1){
 			
-			if((currtime - lasttime) >= getdurationmilisecs(gci.icon_speed, iconwait) ){
-				//If there's an icon show it, if not just wait
-				//if (((gci.icon_speed >> (2*iconwait))&CARD_SPEED_MASK)){
-				if (icontable[iconwait]){
-					if ( ((gci.icon_fmt >> (2*iconwait))&CARD_ICON_MASK)== 1) {
+			if((currtime - lasttime) >= getdurationmilisecs(gci.icon_speed, currframe) ){
+				//If there's a real icon show it, if not just wait until next icon frame
+				if (frametable[currframe]){
+					if ( ((gci.icon_fmt >> (2*currframe))&CARD_ICON_MASK)== 1) {
 						//CI with shared palette
-						iconloadCI(icondata[curricon], tlut[8]);
+						iconloadCI(icondata[currframe], tlut[8]);
 					}
-					else if ( ((gci.icon_fmt >> (2*iconwait))&CARD_ICON_MASK)== 3) {
-						iconloadCI(icondata[curricon], tlut[curricon]);
+					else if ( ((gci.icon_fmt >> (2*currframe))&CARD_ICON_MASK)== 3) {
+						iconloadCI(icondata[currframe], tlut[currframe]);
 					}
-					else if ( ((gci.icon_fmt >> (2*iconwait))&CARD_ICON_MASK)== 2) {
-						iconloadRGB(icondataRGB[curricon]);
+					else if ( ((gci.icon_fmt >> (2*currframe))&CARD_ICON_MASK)== 2) {
+						iconloadRGB(icondataRGB[currframe]);
 					}
 					ShowScreen();
-					//Check animation type (ping pong style if true)
-					if (CHECK_BIT(gci.banner_fmt,2)){
-						if (reverse) curricon --;
-						if (!reverse) curricon ++;
-						//Bounce back
-						if (curricon >= numicons){
-							reverse = 1;
-							curricon = numicons -2;
-						}
-						if (curricon < 0){
-							reverse = 0;
-							curricon = 1;
-						}
-					}else{
-						curricon ++;
-						//start from first icon
-						if (curricon >= numicons){
-							curricon = 0;
-						}
-					}					
 				}
 	
 				//Each bit pair in gci.icon_speed states for an icon's speed.
 				//Blank bit pairs can be used to delay the animation
 				//Check animation type (ping pong style if true)
 				if (CHECK_BIT(gci.banner_fmt,2)){
-					if (reverse) iconwait --;
-					if (!reverse) iconwait ++;
+					if (reverse) currframe --;
+					if (!reverse) currframe ++;
 					//Bounce back
-					if (iconwait > lasticon){
-						iconwait = lasticon -1;
-					}
-					if (iconwait < 0){
-						iconwait = 1;
+					if (currframe > lastframe){
+						reverse = 1;
+						currframe = lastframe -1;
+					}else if (currframe < 0){
+						reverse = 0;
+						currframe = 1;
 					}
 				}else{
-					iconwait ++;
-					if (iconwait > lasticon){
-						iconwait = 0;
+					currframe ++;
+					if (currframe > lastframe){
+						currframe = 0;
 					}
 				}
 	

@@ -36,8 +36,8 @@ extern u16 icondataRGB[8][1024] ATTRIBUTE_ALIGN (32);
 extern u16 tlut[9][256] ATTRIBUTE_ALIGN (32);
 extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
 extern int numicons;
-extern int icontable[8];
-extern int lasticon;
+extern int frametable[8];
+extern int lastframe;
 extern u8 filelist[1024][1024];
 extern u32 maxfile;
 extern GCI gci;
@@ -254,7 +254,7 @@ int SDLoadMCImageHeader(char *sdfilename)
 	//int bytesToRead = 0;
 	long bytesToRead = 0;
 	int i;
-	u16 check, check2;
+	u16 check_fmt, check_speed;
 
 	/*** Clear the work buffers ***/
 	memset (FileBuffer, 0, MAXFILEBUFFER);
@@ -408,47 +408,52 @@ int SDLoadMCImageHeader(char *sdfilename)
 		fread(tlutbanner, 1, 512, handle);
 	}
 	//Icon data
-	check = gci.icon_fmt;
-	check2 = gci.icon_speed;
+	check_fmt = gci.icon_fmt;
+	check_speed = gci.icon_speed;
 	int shared_pal = 0;
-	lasticon = 0;
+	lastframe = 0;
 	numicons = 0;
 	for (i=0;i<8;i++){
-		icontable[i] = 0;
-		//Animation speed is mandatory to be set even for a singe icon
+		//this stores if the frame has a real icon or not
+		//no need to clear all values since we will only use the ones until last frame
+		frametable[i] = 0;
+		
+		//Animation speed is mandatory to be set even for a single icon
 		//When a speed is 0 there are no more icons
 		//Some games may have bits set after the "blank icon" both in
 		//speed (Baten Kaitos) and format (Wario Ware Inc.) bytes, which are just garbage
-		if (!(check2&CARD_ICON_MASK)){
-			//There are no more icons
-			lasticon=-1;
+		if (!(check_speed&CARD_ICON_MASK)){
 			break; 
-		}
+		}else
+		{//We've got a frame
+			lastframe=i;
 			
-		//count the number of icons
-		if (check & CARD_ICON_MASK){
+			if (check_fmt & CARD_ICON_MASK){
+				//count the number of real icons
 				numicons++;
-				icontable[i]=1;
-		}	
-		//CI with shared palette
-		if ((check&CARD_ICON_MASK) == 1) {
-			fread(icondata[numicons-1], 1, 1024, handle);
-			shared_pal = 1;
-		}
-		//CI with palette after the icon
-		else if ((check&CARD_ICON_MASK) == 3)
-		{
-			fread(icondata[numicons-1], 1, 1024, handle);
-			fread(tlut[numicons-1], 1, 512, handle);
-		}
-		//RGB 16 bit icon
-		else if ((check&CARD_ICON_MASK) == 2)
-		{
-				fread(icondataRGB[numicons-1], 1, 2048, handle);
+				frametable[i]=1; //There's a real icon
+				
+				//CI with shared palette
+				if ((check_fmt&CARD_ICON_MASK) == 1) {
+					fread(icondata[i], 1, 1024, handle);
+					shared_pal = 1;
+				}
+				//CI with palette after the icon
+				else if ((check_fmt&CARD_ICON_MASK) == 3)
+				{
+					fread(icondata[i], 1, 1024, handle);
+					fread(tlut[i], 1, 512, handle);
+				}
+				//RGB 16 bit icon
+				else if ((check_fmt&CARD_ICON_MASK) == 2)
+				{
+						fread(icondataRGB[i], 1, 2048, handle);
+				}
+			}
 		}
 		
-		check = check >> 2;
-		check2 = check2 >> 2;
+		check_fmt = check_fmt >> 2;
+		check_speed = check_speed >> 2;
 	}
 	//Get the shared palette
 	if (shared_pal) fread(tlut[8], 1, 512, handle);
