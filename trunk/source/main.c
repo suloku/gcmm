@@ -37,6 +37,8 @@
 #define PSOSDLOADID 0x7c6000a6
 int mode;
 int cancel;
+int doall;
+
 /*** 2D Video Globals ***/
 GXRModeObj *vmode;		/*** Graphics Mode Object ***/
 u32 *xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
@@ -74,7 +76,7 @@ static int initFAT(int device)
 			if (!__io_usbstorage.isInserted())
 			{
 				ShowAction ("No USB device inserted either!");
-				sleep(1);			
+				sleep(1);
 				return 0;
 			}
 			else if (!fatMountSimple ("fat", &__io_usbstorage)){
@@ -116,7 +118,7 @@ static int initFAT(int device)
 			ShowAction("Error Mounting USB fat!");
 			sleep(1);
 			return 0;
-		}	
+		}
 	}
 #else
 	if (!device){
@@ -124,7 +126,7 @@ static int initFAT(int device)
 		if (!__io_gcsda.isInserted())
 		{
 			ShowAction ("No SD Gecko inserted! Insert it in slot A please");
-			sleep(1);	
+			sleep(1);
 			return 0;
 		}
 		if (!fatMountSimple ("fat", &__io_gcsda))
@@ -139,7 +141,7 @@ static int initFAT(int device)
 		if (!__io_gcsdb.isInserted())
 		{
 			ShowAction ("No SD Gecko inserted! Insert it in slot B please");
-			sleep(1);	
+			sleep(1);
 			return 0;
 		}
 		if (!fatMountSimple ("fat", &__io_gcsdb))
@@ -291,10 +293,18 @@ void SD_BackupMode ()
 	int memitems;
 	int selected = 0;
 	int bytestodo;
+	char buffer[256], text[64];
 
 	clearRightPane();
 	DrawText(380,130,"B a c k u p   M o d e");
 	writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup to SD Card ") ;
+	setfontsize (14);
+#ifdef HW_RVL
+	DrawText(40, 60, "Press R/1 to backup ALL savegames");
+#else
+	DrawText(40, 60, "Press R to backup ALL savegames");
+#endif
+
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (MEM_CARD);
 
@@ -310,6 +320,47 @@ void SD_BackupMode ()
 		{
 			WaitPrompt ("Backup action cancelled!");
 		}
+		else if(doall)
+		{
+			doall = WaitPromptChoice("Are you sure you want to backup all files?", "No", "Yes");
+			if (doall)
+			{
+				//Backup All files
+				for ( selected = 0; selected < memitems; selected++ ) {
+					/*** Backup files ***/
+					sprintf(buffer, "[%d/%d] Reading from MC slot %s", selected+1, memitems, (MEM_CARD) ? "B" : "A");
+					ShowAction(buffer);
+					bytestodo = CardReadFile(MEM_CARD, selected);
+					if (bytestodo)
+					{
+						sprintf(buffer, "[%d/%d] Saving to SD card", selected+1, memitems);
+						ShowAction(buffer);
+						if (!SDSaveMCImage())
+						{
+							strncpy(text, (char*)filelist[selected], 32);
+							text[32]='\0';
+							sprintf(buffer, "Error during backup (%s). Continue?", text);
+							doall = WaitPromptChoice(buffer, "Yes", "No");
+							if (doall)
+							{
+								WaitPrompt ("Backup action cancelled due to error!");
+								return;
+							}
+						}
+
+					}
+					else
+					{
+						WaitPrompt ("Error reading MC file");
+						return;
+					}
+				}
+
+				WaitPrompt("Full card backup done!");
+				return;
+			}
+
+		}
 		else
 		{
 			/*** Backup the file ***/
@@ -321,21 +372,23 @@ void SD_BackupMode ()
 				if (SDSaveMCImage())
 				{
 					WaitPrompt ("Backup complete");
+					return;
 				}
 				else
 				{
 					WaitPrompt ("Backup failed");
+					return;
 				}
 			}
 			else
 			{
 				WaitPrompt ("Error reading MC file");
+				return;
 			}
 
 		}
 	}
-
-
+    return;
 }
 
 
@@ -349,7 +402,7 @@ void SD_BackupModeAllFiles ()
 	int memitems;
 	int selected = 0;
 	int bytestodo;
-	
+
 	char buffer[128];
 
 	clearRightPane();
@@ -382,7 +435,7 @@ void SD_BackupModeAllFiles ()
 				return;
 			}
 		}
-		
+
 		WaitPrompt("Full card backup done!");
 	}
 }
@@ -398,24 +451,71 @@ void SD_RestoreMode ()
 {
 	int files;
 	int selected;
+	char buffer[256], text[64];
 
 	clearRightPane();
 	DrawText(380,130,"R e s t o r e  M o d e");
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
+	setfontsize (14);
+#ifdef HW_RVL
+	DrawText(40, 60, "Press R/1 to restore ALL savegames");
+#else
+	DrawText(40, 60, "Press R to restore ALL savegames");
+#endif
+
+
 	files = SDGetFileList (1);
 	if (!files)
 	{
 		WaitPrompt ("No saved games in SD Card to restore !");
 	}
-
-	else
+    else
 	{
 		selected = ShowSelector (1);
 
 		if (cancel)
 		{
 			WaitPrompt ("Restore action cancelled !");
+			return;
 		}
+        else if (doall)
+        {
+            doall = WaitPromptChoice("Are you sure you want to restore -ALL- files?", "Yes", "No");
+            if (!doall)
+            {
+                //Restore All files
+                for ( selected = 0; selected < files; selected++ ) {
+                    /*** Restore files ***/
+                    sprintf(buffer, "[%d/%d] Reading from SD card", selected+1, files);
+                    ShowAction(buffer);
+                    if (SDLoadMCImage ((char*)filelist[selected]))
+                    {
+                        sprintf(buffer, "[%d/%d] Saving to MC slot %s", selected+1, files, (MEM_CARD) ? "B" : "A");
+                        ShowAction(buffer);
+                        if (!CardWriteFile (MEM_CARD))
+                        {
+                            strncpy(text, (char*)filelist[selected], 32);
+                            text[32]='\0';
+                            sprintf(buffer, "Error during restore (%s). Continue?", text);
+                            doall = WaitPromptChoice(buffer, "Yes", "No");
+                            if (doall)
+                            {
+                                WaitPrompt ("Restore action cancelled due to error!");
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        WaitPrompt ("Error reading image");
+                        return;
+                    }
+                }
+
+                WaitPrompt("Full card restore done!");
+                return;
+            }
+        }
 		else
 		{
 			ShowAction ("Reading from SD Card");
@@ -425,20 +525,23 @@ void SD_RestoreMode ()
 				if (CardWriteFile (MEM_CARD))
 				{
 					WaitPrompt ("Restore Complete");
+					return;
 				}
 				else
 				{
 					WaitPrompt ("Error during restore");
+					return;
 				}
 			}
 			else
 			{
 				WaitPrompt ("Error reading image");
+				return;
 			}
 		}
 
 	}
-
+    return;
 }
 
 /****************************************************************************
@@ -459,7 +562,7 @@ void SD_RawBackupMode ()
 		sprintf(msg, "Backup complete! Wrote %d bytes to SD",writen);
 		WaitPrompt(msg);
 	}else{
-		
+
 		WaitPrompt("Backup failed!");
 	}
 
@@ -482,7 +585,7 @@ void SD_RawRestoreMode ()
 	DrawText(380,130,"R A W   R e s t o r e");
 	DrawText(450,150,"M o d e");
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ");
-	
+
 	files = SDGetFileList (0);
 	if (!files)
 	{
@@ -551,9 +654,10 @@ int main ()
 		setfontsize (FONT_SIZE);
 		freecardbuf();
 		cancel = 0;/******a global value to track action aborted by user pressing button B********/
+		doall = 0;
 		mode = SelectMode ();
-#ifdef HW_RVL		
-		if ((mode != 500 ) && (mode != 100)){
+#ifdef HW_RVL
+		if ((mode != 500 ) && (mode != 100) && (mode != 600)){
 			if (WaitPromptChoice ("Please select a memory card slot", "Slot B", "Slot A") == 1)
 			{
 				MEM_CARD = CARD_SLOTA;
@@ -595,8 +699,10 @@ int main ()
 #endif
 			break; //PSO_Reload
 		case 600 : //User wants to backup full card
+			/*
 			if (have_sd) SD_BackupModeAllFiles();
 			else WaitPrompt("Reboot aplication with an SD card");
+			*/
 			break;
 		case 700 : //Raw backup mode
 			if (have_sd)
@@ -611,31 +717,31 @@ int main ()
 		case 800 : //Raw restore mode
 			//These two lines are a work around for the second call of CARD_Probe to detect a newly inserted memory card
 			CARD_Probe(MEM_CARD);
-			VIDEO_WaitVSync (); 		
+			VIDEO_WaitVSync ();
 			if (CARD_Probe(MEM_CARD) > 0)
 			{
 				if (have_sd) SD_RawRestoreMode();
 				else WaitPrompt("Reboot aplication with an SD card");
-				
+
 			}else if (MEM_CARD)
 			{
 				WaitPrompt("Please insert a memory card in slot B");
 			}else
 			{
 				WaitPrompt("Please insert a memory card in slot A");
-			}				
+			}
 			break;
 		case 900 : //Format card mode
 			//These two lines are a work around for the second call of CARD_Probe to detect a newly inserted memory card
 			CARD_Probe(MEM_CARD);
-			VIDEO_WaitVSync (); 
+			VIDEO_WaitVSync ();
 			if (CARD_Probe(MEM_CARD) > 0)
 			{
 				DrawText(70, 230, "F o r m a t   C a r d");
 				DrawText(150, 250, "M o d e");
 				clearRightPane();
 				MC_FormatMode(MEM_CARD);
-				
+
 			}else if (MEM_CARD)
 			{
 				WaitPrompt("Please insert a memory card in slot B");

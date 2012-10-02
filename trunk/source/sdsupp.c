@@ -83,7 +83,7 @@ int SDSaveMCImage ()
 	mkdir(filename, S_IREAD | S_IWRITE);
 
 	sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, tfile, filenumber);
-	
+
 	//Lets try if there's already a savegame (if it exists its name is legal, so theoretically the illegal name check will pass
 	//Illegal savegame should report as nonexisting...
 	//We will number the files
@@ -125,7 +125,7 @@ int SDSaveMCImage ()
 		//SDCARD_CloseFile (handle);
 		fwrite (FileBuffer , 1 , bytesToWrite , handle );
 		fclose (handle);
-		
+
 		// check if file actually wrote correctly
 		handle = fopen ( filename , "rb" );
 		if (handle <= 0)
@@ -142,15 +142,15 @@ int SDSaveMCImage ()
 			// ... this will end in an endless loop if the file to write is 0 bytes but that's very unlikely
 			break;
 		}
-		
+
 		//Try 10 times if needed, then give up. Better to avoid endless looping
 		if (retries > 9)
 		{
 			return 0;
 		}
-		
+
 	}
-	
+
 	return 1;
 }
 
@@ -383,7 +383,7 @@ int SDLoadMCImageHeader(char *sdfilename)
 	}
 
 	ExtractGCIHeader();
-#ifdef STATUSOGC	
+#ifdef STATUSOGC
 	GCIMakeHeader();
 #else
 	//Let's get the full header as is, instead of populating it...
@@ -417,22 +417,22 @@ int SDLoadMCImageHeader(char *sdfilename)
 		//this stores if the frame has a real icon or not
 		//no need to clear all values since we will only use the ones until last frame
 		frametable[i] = 0;
-		
+
 		//Animation speed is mandatory to be set even for a single icon
 		//When a speed is 0 there are no more icons
 		//Some games may have bits set after the "blank icon" both in
 		//speed (Baten Kaitos) and format (Wario Ware Inc.) bytes, which are just garbage
 		if (!(check_speed&CARD_ICON_MASK)){
-			break; 
+			break;
 		}else
 		{//We've got a frame
 			lastframe=i;
-			
+
 			if (check_fmt & CARD_ICON_MASK){
 				//count the number of real icons
 				numicons++;
 				frametable[i]=1; //There's a real icon
-				
+
 				//CI with shared palette
 				if ((check_fmt&CARD_ICON_MASK) == 1) {
 					fread(icondata[i], 1, 1024, handle);
@@ -451,7 +451,7 @@ int SDLoadMCImageHeader(char *sdfilename)
 				}
 			}
 		}
-		
+
 		check_fmt = check_fmt >> 2;
 		check_speed = check_speed >> 2;
 	}
@@ -521,7 +521,7 @@ int SDLoadCardImageHeader(char *sdfilename)
 
 	/*** Close the file ***/
 	fclose (handle);
-	
+
 	return bytesToRead;
 }
 
@@ -608,7 +608,7 @@ int SDGetFileList(int mode)
 					dirtype = ((isdir_sd(namefile) == 1) ? DIRENT_T_DIR : DIRENT_T_FILE);
 
 					filecount++;
-				}			
+				}
 			}
 		}
 	}
