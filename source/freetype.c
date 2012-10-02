@@ -36,6 +36,7 @@ FT_GlyphSlot slot;
 FT_UInt glyph_index;
 extern card_stat CardStatus;
 extern int cancel;
+extern int doall;
 extern int mode;
 extern s32 MEM_CARD;
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
@@ -418,8 +419,8 @@ int SelectMode ()
 					VIDEO_WaitVSync ();
 				}
 				return 900;
-			}			
-		}		
+			}
+		}
 #ifdef HW_RVL
 		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_A)
 		{
@@ -486,14 +487,14 @@ int SelectMode ()
 				}
 				return 800;
 			}
-			
+
 			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_2){//Format card mode
 				while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_B) || (WPAD_ButtonsDown (0) & WPAD_BUTTON_2))
 				{
 					VIDEO_WaitVSync ();
 				}
 				return 900;
-			}			
+			}
 		}
 		if (power)
 		{
@@ -698,20 +699,20 @@ void showCardInfo(int sel){
 	//START card image info START
 	//put block 1 in cardheader
 	SDLoadCardImageHeader((char*)filelist[sel]);
-	
+
 	//get the true serial
 	u64 serial1[4];
     for (i=0;i<4;i++){
         memcpy(&serial1[i], (u8*)&cardheader+(8*i), sizeof(u64));
     }
     u64 serialA = serial1[0]^serial1[1]^serial1[2]^serial1[3];
-	
+
 	//get the flash ID
 	getserial(imageserial);
-	
+
 	sprintf(txt, "Card image flash ID");
 	DrawText(x, y, txt);
-	y += 20;	
+	y += 20;
 
 	sprintf(txt, "%02X", imageserial[0]);
 	for (i=1; i<11; i++){
@@ -720,7 +721,7 @@ void showCardInfo(int sel){
 	}
 	DrawText(x,y,txt);
 	y+=20;
-	
+
 	sprintf(txt, "Serial N.: %016llX", serialA);
 	DrawText(x,y,txt);
 	y+=20;
@@ -734,10 +735,10 @@ void showCardInfo(int sel){
 
 	//In this call we mount the card, so we can later read the SRAM unscrambled flash ID
 	u64 cardserialno = Card_SerialNo(MEM_CARD);
-	
+
 	sramex = __SYS_LockSramEx();
 	__SYS_UnlockSramEx(0);
-	
+
 	if (!MEM_CARD)
 	{
 		sprintf(txt, "Slot A card flash ID:");
@@ -755,11 +756,11 @@ void showCardInfo(int sel){
 	}
 	DrawText(x,y,txt);
 	y+=20;
-	
+
 	sprintf(txt, "Serial N.: %016llX", cardserialno);
 	DrawText(x,y,txt);
 	y+=20;
-	
+
 	sprintf(txt, "Size: %d blocks", (memsize*16)-5);
 	DrawText(x,y,txt);
 	//END real card info END
@@ -795,11 +796,11 @@ void showSaveInfo(int sel)
 		// struct gci now contains header info
 
 	}
-	
+
 	//Draw nice gradient background for banner and icon
 	DrawBox (410, 163, 410+160, 163+39, getcolour (255,255,255));
 	DrawBoxFilledGradient(412, 164, (410+159), (164+37), BLUECOL, PURPLECOL);
-	
+
 	//Show icon and banner
 	if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_RGB) {
 		bannerloadRGB(bannerdata);
@@ -818,7 +819,7 @@ void showSaveInfo(int sel)
 	else if ((gci.icon_fmt&CARD_ICON_MASK)== 2) {
 		iconloadRGB(icondataRGB[0]);
 	}
-    
+
 	/*** Display relevant info for this save ***/
 	sprintf(txt, "#%d %s/%s", sel, gamecode, company);
 	DrawText(x, y, txt);
@@ -829,7 +830,7 @@ void showSaveInfo(int sel)
 
 	char comment1[26];
 	char comment2[6];
-	
+
 	//We go ahead and print the full 32byte comment lines - could go offscreen
 	//but we like to live dangerously
 	for (j = 0; j < 32; j++) {
@@ -840,7 +841,7 @@ void showSaveInfo(int sel)
 	DrawText(x, y, comment1);
 	y += 20;
 	memset(comment1, 0, sizeof(comment1));
-	
+
 	for (j = 32; j < 64; j++) {
 		if ((char)CommentBuffer[j] == 0 || (char)CommentBuffer[j] == 10) {break;}
 		comment2[j-32] = (char)CommentBuffer[j];
@@ -856,7 +857,7 @@ void showSaveInfo(int sel)
 	/*
 	//Raw time display
 	sprintf(txt, "D: %08X", t);
-	DrawText(x, y, txt);	
+	DrawText(x, y, txt);
 	y += 20;
 	*/
 
@@ -887,7 +888,7 @@ void showSaveInfo(int sel)
 		year = I;
 		month = J;
 		day = K;
-		
+
 	sec = t % 60;
 	t /= 60;
 	min = t % 60;
@@ -959,7 +960,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 					DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, 0xff, 0xff, 0xff);
 				}
 				setfontcolour (28, 28, 28);
-				DrawText (35, (j * 20) + ypos, text); 
+				DrawText (35, (j * 20) + ypos, text);
 				setfontcolour (0xff, 0xff, 0xff);
 			}
 			else{
@@ -1054,8 +1055,8 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
     }
 }
 */
-#ifdef DEBUG_VALUES	
-static u8 CalculateFrameRate() 
+#ifdef DEBUG_VALUES
+static u8 CalculateFrameRate()
 {
     static u8 frameCount = 0;
     static u32 lastTime;
@@ -1074,13 +1075,13 @@ static u8 CalculateFrameRate()
 int getdurationmilisecs(u16 icon_speed, int index)
 {
 	int speed = ((icon_speed >> (2*index))&CARD_SPEED_MASK)*4;
-	
+
 	if(vmode_60hz){
 		return 1000/(60/speed);
 	}else{
 		return 1000/(50/speed);
 	}
-} 
+}
 
 /****************************************************************************
 * ShowSelector
@@ -1112,40 +1113,40 @@ int ShowSelector (int saveinfo)
 	u8 fps = 0;
 	char test[1024];
 #endif
-	
+
 	while (quit == 0)
 	{
 
 		currtime = ticks_to_millisecs(gettime());
-#ifdef DEBUG_VALUES		
+#ifdef DEBUG_VALUES
 		fps = CalculateFrameRate();
 #endif
 		if (redraw)
 		{
 			//clear buffers
-			memset((u8*)bannerdata, 0, CARD_BANNER_W*CARD_BANNER_H);
+			memset((u8*)bannerdata, 0, CARD_BANNER_W*CARD_BANNER_H*2);
 			memset((u8*)bannerdataCI, 0, CARD_BANNER_W*CARD_BANNER_H);
 			memset((u8*)icondata, 0, 8*1024);
-			memset((u8*)icondataRGB, 0, 8*2048);
+			memset((u8*)icondataRGB, 0, 8*1024*2);
 			memset((u8*)tlut, 0, 9*512);
 			memset((u8*)tlutbanner, 0, 512);
-			
+
 			ShowFiles (offset, selection, upordown, saveinfo);
-			
+
 			//reinit variables
 			redraw = 0;
 			reverse = 0;
 			currframe = 1;
 			lasttime = ticks_to_millisecs(gettime());
-			
+
 		}
-#ifdef DEBUG_VALUES		
+#ifdef DEBUG_VALUES
 		sprintf (test, "FPS%d numicons%d CF%d LF%d FT%d animtype%d speed%d", fps, numicons, currframe, lastframe, frametable[currframe], CHECK_BIT(gci.banner_fmt,2), ((gci.icon_speed >> (2*currframe))&CARD_SPEED_MASK)*4 );
 		ShowAction(test);
 #endif
-	
+
 		if (numicons > 1){
-			
+
 			if((currtime - lasttime) >= getdurationmilisecs(gci.icon_speed, currframe) ){
 				//If there's a real icon show it, if not just wait until next icon frame
 				if (frametable[currframe]){
@@ -1161,7 +1162,7 @@ int ShowSelector (int saveinfo)
 					}
 					ShowScreen();
 				}
-	
+
 				//Each bit pair in gci.icon_speed states for an icon's speed.
 				//Blank bit pairs can be used to delay the animation
 				//Check animation type (ping pong style if true)
@@ -1182,12 +1183,12 @@ int ShowSelector (int saveinfo)
 						currframe = 0;
 					}
 				}
-	
+
 				lasttime = currtime;
 			}
-		
+
 		}
-		
+
 		p = PAD_ButtonsDown (0);
 #ifdef HW_RVL
 		wp = WPAD_ButtonsDown (0);
@@ -1202,6 +1203,17 @@ int ShowSelector (int saveinfo)
 			cancel = 1;
 			return -1;
 		}
+
+		if ((p & PAD_TRIGGER_R)
+#ifdef HW_RVL
+		        | (wp & WPAD_BUTTON_1)
+#endif
+		   )
+		{
+				doall = 1;
+				return -1;
+		}
+
 #ifdef HW_RVL
 		if (power)
 		{
@@ -1261,7 +1273,7 @@ int ShowSelector (int saveinfo)
 				offset = 0;
 			}
 			redraw = 1;
-		}		
+		}
 
 	}
 	return selection;
