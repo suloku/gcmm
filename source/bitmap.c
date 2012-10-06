@@ -15,7 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bitmap.h"
+#include "gci.h"
 
+extern GCI gci;
 //*extern GXRModeObj *vmode; /*** Graphics Mode Object ***/
 //extern u32 *xfb[2] = { NULL, NULL }; /*** Framebuffers ***/
 //extern int whichfb = 0; /*** Frame buffer toggle ***/
@@ -163,7 +165,7 @@ u32 ShowBMP(u8 * bmpfile) {
     return 1;
 }
 
-/*** 
+/***
 	ShowBanner is ShowBMP but modified to be simpler. We don't need to
 	check for a header since we generated the bmp BGR values directly for each save game.
 ***/
@@ -189,10 +191,10 @@ void ShowBanner(u8 *banner) {
 	fboffset -= (height * 90);
 	fboffset += width/2+3; //at this point the banner is perfectly aligned with right window
 	fboffset += ((height *320)>>1)+3;
-	
+
 	//fboffset += 24; //force banner to display to the right of icon
-	fboffset += 44; //force banner to display to the right of icon
-	
+	fboffset += 43; //force banner to display to the right of icon
+
     for (rows = 0; rows < height; rows++) {
         for (cols = 0; cols < (fbwidth >> 1); cols++) {
             xfb[whichfb][fboffset + cols] =CvtRGB (bgr[2], bgr[1], bgr[0],
@@ -232,9 +234,16 @@ void ShowIcon(u8 *icon) {
 	fboffset -= (height * 90);
 	fboffset += width/2+3;
 	fboffset += ((height *320)>>1)+3;
-	
-	fboffset += 20; //center icon
-	
+
+	if (SDCARD_GetBannerFmt(gci.banner_fmt) == 1 || SDCARD_GetBannerFmt(gci.banner_fmt) == 2 )
+	{
+		fboffset += 20;
+	}else
+	{
+		fboffset += 47; //center icon
+	}
+
+
     for (rows = 0; rows < height; rows++) {
         for (cols = 0; cols < (fbwidth >> 1); cols++) {
             xfb[whichfb][fboffset + cols] =CvtRGB (bgr[2], bgr[1], bgr[0],

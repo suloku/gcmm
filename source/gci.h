@@ -15,6 +15,11 @@
 
 //#define STATUSOGC
 
+#define SDCARD_GetBannerFmt(banner_fmt)		((banner_fmt) & 0x03)
+#define SDCARD_GetIconFmt(icon_fmt,n)		(((icon_fmt)>>(2*(n))) & 0x03)
+#define SDCARD_GetIconSpeed(icon_speed,n)	(((icon_speed)>>(2*(n))) & 0x03)
+#define SDCARD_GetIconAnim(banner_fmt)		((banner_fmt) & 0x04)
+
 typedef struct {
 	u8 gamecode[4];
 	u8 company[2];
