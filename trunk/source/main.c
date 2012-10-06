@@ -45,6 +45,7 @@ u32 *xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;		/*** Frame buffer toggle ***/
 int screenheight;
 int vmode_60hz = 0;
+u32 retraceCount;
 
 extern u8 filelist[1024][1024];
 extern bool offsetchanged;
@@ -53,8 +54,9 @@ s32 MEM_CARD = CARD_SLOTB;
 extern syssramex *sramex;
 extern u8 imageserial[12];
 
-static void updatePAD()
+static void updatePAD(u32 retrace)
 {
+    retraceCount = retrace;
 	PAD_ScanPads();
 #ifdef HW_RVL
 	WPAD_ScanPads();

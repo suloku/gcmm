@@ -12,11 +12,12 @@
 #define RESTORE_MODE 400
 //#define RELOAD_MODE 500 /* Free mode */
 
-//pos 0 is less significant bit and pos 7 the most significant
-#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
-
 //Uncomment this definiton to show some debug values on screen
 //#define DEBUG_VALUES
+
+//Uncomment this definiton to use time lapse for icon duration instead of retrace count
+//Time code is mantained as an alternative example of animating the icons
+#define USE_TIME
 
 #ifdef HW_RVL
 void initialise_power() ;

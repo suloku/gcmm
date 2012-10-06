@@ -39,6 +39,7 @@ extern int cancel;
 extern int doall;
 extern int mode;
 extern s32 MEM_CARD;
+
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 icondata[8][1024] ATTRIBUTE_ALIGN (32);
@@ -46,8 +47,11 @@ extern u16 icondataRGB[8][1024] ATTRIBUTE_ALIGN (32);
 extern u16 tlut[9][256] ATTRIBUTE_ALIGN (32);
 extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
 extern int numicons;
-extern int frametable[8];
+extern int frametable[2*CARD_MAXICONS - 2];
+extern int iconindex[2*CARD_MAXICONS - 2];
 extern int lastframe;
+extern int lasticon;
+
 extern Header cardheader;
 extern s32 memsize, sectsize;
 extern syssramex *sramex;
@@ -65,6 +69,7 @@ extern u32 *xfb[2];
 extern int whichfb;
 extern GXRModeObj *vmode;
 extern int vmode_60hz;
+extern u32 retraceCount;
 
 /*** File listings ***/
 extern card_dir CardList[];
@@ -825,18 +830,6 @@ void showSaveInfo(int sel)
 		bannerloadCI(bannerdataCI, tlutbanner);
 	}
 
-	//Show first icon
-	if ((gci.icon_fmt&CARD_ICON_MASK)== 1) {
-		//CI with shared palette
-		iconloadCI(icondata[0], tlut[8]);
-	}
-	else if ((gci.icon_fmt&CARD_ICON_MASK)== 3) {
-		iconloadCI(icondata[0], tlut[0]);
-	}
-	else if ((gci.icon_fmt&CARD_ICON_MASK)== 2) {
-		iconloadRGB(icondataRGB[0]);
-	}
-
 	/*** Display relevant info for this save ***/
 	sprintf(txt, "#%d %s/%s", sel, gamecode, company);
 	DrawText(x, y-4, txt);
@@ -1101,9 +1094,11 @@ static u8 CalculateFrameRate()
     return FPS;
 }
 #endif
-int getdurationmilisecs(u16 icon_speed, int index)
+#ifdef USE_TIME
+int getdurationmilisecs(u16 icon_speed, int index, int bounce)
 {
-	int speed = ((icon_speed >> (2*index))&CARD_SPEED_MASK)*4;
+
+	int speed = SDCARD_GetIconSpeedBounce(icon_speed,index,bounce)*4;
 
 	if(vmode_60hz){
 		return 1000/(60/speed);
@@ -1111,6 +1106,7 @@ int getdurationmilisecs(u16 icon_speed, int index)
 		return 1000/(50/speed);
 	}
 }
+#endif
 
 /****************************************************************************
 * ShowSelector
@@ -1133,10 +1129,14 @@ int ShowSelector (int saveinfo)
 	int selection = 0;
 	//animated icon display vars
 	int currframe = 0;
-	int reverse = 0;
-
+	int bounceindex;
+#ifdef USE_TIME
 	u64 lasttime, currtime;
-	lasttime = ticks_to_millisecs(gettime());
+	currtime = ticks_to_millisecs(gettime());
+	lasttime = currtime - 250;
+#else
+    int i;
+#endif
 
 #ifdef DEBUG_VALUES
 	u8 fps = 0;
@@ -1146,10 +1146,6 @@ int ShowSelector (int saveinfo)
 	while (quit == 0)
 	{
 
-		currtime = ticks_to_millisecs(gettime());
-#ifdef DEBUG_VALUES
-		fps = CalculateFrameRate();
-#endif
 		if (redraw)
 		{
 			//clear buffers
@@ -1164,59 +1160,66 @@ int ShowSelector (int saveinfo)
 
 			//reinit variables
 			redraw = 0;
-			reverse = 0;
-			currframe = 1;
-			lasttime = ticks_to_millisecs(gettime());
-
+			currframe = 0;
+			bounceindex = CARD_MAXICONS;//This ensures getting correct duration values for non-bouncing animations
+			if (SDCARD_GetIconAnim(gci.banner_fmt) == CARD_ANIM_BOUNCE)
+            {
+                bounceindex = 0;
+                while(SDCARD_GetIconSpeed(gci.icon_speed, bounceindex) != 0 && bounceindex < CARD_MAXICONS)
+                {
+                    bounceindex++;
+                }
+            }
+#ifdef USE_TIME
+            lasttime -= 250;//to ensure first icon will be loaded
+#endif
 		}
+
 #ifdef DEBUG_VALUES
-		sprintf (test, "FPS%d numicons%d CF%d LF%d FT%d animtype%d speed%d", fps, numicons, currframe, lastframe, frametable[currframe], CHECK_BIT(gci.banner_fmt,2), ((gci.icon_speed >> (2*currframe))&CARD_SPEED_MASK)*4 );
+        fps = CalculateFrameRate();
+		sprintf (test, "%d FPS%d numicons%02d lasticon%02d CF%02d LF%03d FT%03d II%02d animtype%d speed%02d", retraceCount, fps, numicons, lasticon, currframe, lastframe, frametable[currframe], iconindex[currframe], SDCARD_GetIconAnim(gci.banner_fmt), SDCARD_GetIconSpeedBounce(gci.icon_speed,currframe,bounceindex)*4 );
 		ShowAction(test);
 #endif
+        if (lastframe)
+        {
+#ifdef USE_TIME
+            currtime = ticks_to_millisecs(gettime());
+            if((currtime - lasttime) >= getdurationmilisecs(gci.icon_speed, currframe, bounceindex) )
+            {
+#else
+            currframe = retraceCount % lastframe;
+            for (i = 0; i < 2 * CARD_MAXICONS - 2; ++i)
+            {
+                if (currframe < frametable[i])
+                {
+                    break;
+                }
+            }
+            currframe = i;
+#endif
+                //If there's a real icon show it, if not just wait until next icon frame
+                if ( SDCARD_GetIconFmt(gci.icon_fmt,iconindex[currframe])== 1) {
+                    //CI with shared palette
+                    iconloadCI(icondata[iconindex[currframe]], tlut[8]);
+                }
+                else if ( SDCARD_GetIconFmt(gci.icon_fmt,iconindex[currframe])== 3) {
+                    iconloadCI(icondata[iconindex[currframe]], tlut[iconindex[currframe]]);
+                }
+                else if ( SDCARD_GetIconFmt(gci.icon_fmt,iconindex[currframe])== 2) {
+                    iconloadRGB(icondataRGB[iconindex[currframe]]);
+                }
+                //ShowScreen();
 
-		if (numicons > 1){
-
-			if((currtime - lasttime) >= getdurationmilisecs(gci.icon_speed, currframe) ){
-				//If there's a real icon show it, if not just wait until next icon frame
-				if (frametable[currframe]){
-					if ( ((gci.icon_fmt >> (2*currframe))&CARD_ICON_MASK)== 1) {
-						//CI with shared palette
-						iconloadCI(icondata[currframe], tlut[8]);
-					}
-					else if ( ((gci.icon_fmt >> (2*currframe))&CARD_ICON_MASK)== 3) {
-						iconloadCI(icondata[currframe], tlut[currframe]);
-					}
-					else if ( ((gci.icon_fmt >> (2*currframe))&CARD_ICON_MASK)== 2) {
-						iconloadRGB(icondataRGB[currframe]);
-					}
-					ShowScreen();
-				}
-
-				//Each bit pair in gci.icon_speed states for an icon's speed.
-				//Blank bit pairs can be used to delay the animation
-				//Check animation type (ping pong style if true)
-				if (CHECK_BIT(gci.banner_fmt,2)){
-					if (reverse) currframe --;
-					if (!reverse) currframe ++;
-					//Bounce back
-					if (currframe > lastframe){
-						reverse = 1;
-						currframe = lastframe -1;
-					}else if (currframe < 0){
-						reverse = 0;
-						currframe = 1;
-					}
-				}else{
-					currframe ++;
-					if (currframe > lastframe){
-						currframe = 0;
-					}
-				}
-
-				lasttime = currtime;
-			}
-
-		}
+                currframe ++;
+                if (currframe > lasticon)
+                {
+                    currframe = 0;
+                }
+#ifdef USE_TIME
+                lasttime = currtime;
+            }
+#endif
+        }
 
 		p = PAD_ButtonsDown (0);
 #ifdef HW_RVL

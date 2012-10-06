@@ -41,8 +41,10 @@ u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 	 Needs decoding by bannerloadCI function before we can show it ***/
 u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 int numicons;
-int frametable[8];
+int frametable[2*CARD_MAXICONS - 2];
+int iconindex[2*CARD_MAXICONS - 2];
 int lastframe;
+int lasticon;
 /*** This matrix will serve as our array of filenames for each file on the card
      We add 10 to filenamelen since we add on game company info***/
 u8 filelist[1024][1024];
@@ -104,7 +106,7 @@ int MountCard(int cslot)
 		/*** Mount the card ***/
 		ret = CARD_Mount (cslot, SysArea, card_removed);
 		if (ret >= 0) break;
-		
+
 		VIDEO_WaitVSync ();
 		tries++;
 	}
@@ -115,7 +117,7 @@ int MountCard(int cslot)
 		return isMounted;
 	}
 	/*** If this point is reached, something went wrong ***/
-	
+
 	return ret;
 }
 
@@ -344,58 +346,85 @@ int CardReadFileHeader (int slot, int id)
 		memcpy(tlutbanner, offset, 512);
 		offset += 512;
 	}
+
 	//Icon data
-	check_fmt = gci.icon_fmt;
-	check_speed = gci.icon_speed;
 	int shared_pal = 0;
 	lastframe = 0;
 	numicons = 0;
-	for (i=0;i<8;i++){
-		//this stores if the frame has a real icon or not
-		//no need to clear all values since we will only use the ones until last frame
-		frametable[i] = 0;
-		
+	int j =0;
+    i=0;
+	int current_icon = 0;
+	for (current_icon=0;i<CARD_MAXICONS;++current_icon){
+
+		//no need to clear all values since we will only use the ones until lasticon
+		frametable[current_icon] = 0;
+		iconindex[current_icon] = 0;
+
 		//Animation speed is mandatory to be set even for a single icon
 		//When a speed is 0 there are no more icons
 		//Some games may have bits set after the "blank icon" both in
 		//speed (Baten Kaitos) and format (Wario Ware Inc.) bytes, which are just garbage
-		if (!(check_speed&CARD_ICON_MASK)){
-			break; 
+		if (!SDCARD_GetIconSpeed(gci.icon_speed,current_icon)){
+			break;
 		}else
 		{//We've got a frame
-			lastframe=i;
-			
-			if (check_fmt & CARD_ICON_MASK){
+			lastframe+=SDCARD_GetIconSpeed(gci.icon_speed,current_icon)*4;//Count the total frames
+			frametable[current_icon]=lastframe; //Store the end frame of the icon
+
+			if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) != 0)
+			{
 				//count the number of real icons
 				numicons++;
-				frametable[i]=1; //There's a real icon
-				
+				iconindex[current_icon]=current_icon; //Map the icon
+
 				//CI with shared palette
-				if ((check_fmt&CARD_ICON_MASK) == 1) {
-					memcpy(icondata[i], offset, 1024);
+				if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) == 1) {
+					memcpy(icondata[current_icon], offset, 1024);
 					offset += 1024;
 					shared_pal = 1;
 				}
 				//CI with palette after the icon
-				else if ((check_fmt&CARD_ICON_MASK) == 3)
+				else if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) == 3)
 				{
-					memcpy(icondata[i], offset, 1024);
-					offset += 1024;			
-					memcpy(tlut[i], offset, 512);
-					offset += 512;				
+					memcpy(icondata[current_icon], offset, 1024);
+					offset += 1024;
+					memcpy(tlut[current_icon], offset, 512);
+					offset += 512;
 				}
 				//RGB 16 bit icon
-				else if ((check_fmt&CARD_ICON_MASK) == 2)
+				else if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) == 2)
 				{
-					memcpy(icondataRGB[i], offset, 2048);
-					offset += 2048;			
+					memcpy(icondataRGB[current_icon], offset, 2048);
+					offset += 2048;
 				}
+			}else
+			{       //Get next real icon
+                    for(j=current_icon;j<CARD_MAXICONS;++j){
+
+                        if (SDCARD_GetIconFmt(gci.icon_fmt,j) != 0)
+                        {
+                            iconindex[current_icon]=j; //Map blank frame to next real icon
+                            break;
+                        }
+
+                    }
 			}
 		}
-			
-		check_fmt = check_fmt >> 2;
-		check_speed = check_speed >> 2;
 	}
+
+    lasticon = current_icon-1;
+    //Now get icon indexes for ping-pong style icons
+    if (SDCARD_GetIconAnim(gci.banner_fmt) == CARD_ANIM_BOUNCE && current_icon>1) //We need at least 3 icons
+    {
+        j=current_icon;
+        for (i = current_icon-2; 0 < i; --i, ++j)
+        {
+            lastframe += SDCARD_GetIconSpeed(gci.icon_speed,i)*4;
+            frametable[j] = lastframe;
+            iconindex[j] = iconindex[i];
+        }
+        lasticon = j-1;
+    }
 	//Get the shared palette
 	if (shared_pal) memcpy(tlut[8], offset, 512);
 
@@ -558,7 +587,7 @@ int CardWriteFile (int slot)
 					continue;
 				}
 			}
-		
+
 			/*** User canceled - abort ***/
 			CARD_Unmount (slot);
 			WaitCardError("File already exists", err);
@@ -589,13 +618,13 @@ tryagain:
 					{
 						WaitCardError("MCDel", err);
 						CARD_SetCompany(NULL);
-						CARD_SetGamecode(NULL);						
+						CARD_SetGamecode(NULL);
 						CARD_Unmount (slot);
 						return 0;
 					}
 					goto tryagain;
 				}
-			}		
+			}
 		}
 		//Return To show all so we don't have errors
 		CARD_SetCompany(NULL);
@@ -631,7 +660,7 @@ tryagain:
 	/*** Finally, update the status ***/
 	CARD_SetStatus (slot, CardFile.filenum, &CardStatus);
 	//For some reason this sets the file to Move->allowed, Copy->not allowed, Public file instead of the actual permission value
-	CARD_SetAttributes(slot, CardFile.filenum, &permission);	
+	CARD_SetAttributes(slot, CardFile.filenum, &permission);
 #else
 	__card_setstatusex(slot, CardFile.filenum, &gci);
 #endif
@@ -649,7 +678,7 @@ tryagain:
 void WaitCardError(char *src, int error)
 {
 	char msg[1024], err[256];
-	
+
 	//Error message possibilites
 	switch (error)
 	{
@@ -784,14 +813,14 @@ void MC_FormatMode(s32 slot)
 {
 	int erase = 1;
 	int err;
-	
+
 	//0 = B wass pressed -> ask again
 	if (!slot){
 		erase = WaitPromptChoice("Are you sure you want to format memory card in slot A?", "Format", "Cancel");
 	}else{
 		erase = WaitPromptChoice("Are you sure you want to format memory card in slot B?", "Format", "Cancel");
 	}
-	
+
 	if (!erase){
 		if (!slot){
 			erase = WaitPromptChoiceAZ("All contents of memory card in slot A will be erased!", "Format", "Cancel");
@@ -837,7 +866,7 @@ void MC_FormatMode(s32 slot)
 //The following code is made by Ralf at GSCentral forums (gscentral.org)
 //http://board.gscentral.org/retro-hacking/53093.htm#post188949
 
-// u8 FileBuffer[MAXFILEBUFFER]: .gci file buffer 
+// u8 FileBuffer[MAXFILEBUFFER]: .gci file buffer
 // MCDATAOFFSET: .gci header size (0x40 bytes)
 
 /*************************************************************/
