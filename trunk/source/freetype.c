@@ -774,6 +774,10 @@ void showSaveInfo(int sel)
 	//clear right pane, but just the save info
 	int bgcolor = getcolour(84,174,211);
 	DrawBoxFilled(375, 145, 605, 390, bgcolor);
+	//clear the right side just in case we went offscreen with previous comment
+	DrawVLine (606, 145, 390, CvtRGB(84,174,211,183,209,240));
+	DrawVLine (608, 145, 390, CvtRGB(230,232,250,242,243,252));
+	DrawBoxFilled(610, 145, 640, 390, getcolour(255,255,255));
 
 	// read file, display some more info
 	// TODO: only read the necessary header + comment, display banner and icon files
@@ -798,16 +802,29 @@ void showSaveInfo(int sel)
 	}
 
 	//Draw nice gradient background for banner and icon
-	DrawBox (410, 163, 410+160, 163+39, getcolour (255,255,255));
-	DrawBoxFilledGradient(412, 164, (410+159), (164+37), BLUECOL, PURPLECOL);
+	if(SDCARD_GetBannerFmt(gci.banner_fmt) == 1 || SDCARD_GetBannerFmt(gci.banner_fmt) == 2){
+	    //Box for icon+banner
+		DrawHLine (410, 410+160, 162, getcolour (255,255,255));
+		DrawBox (410, 163, 410+160, 163+39, getcolour (255,255,255));
+		DrawHLine (410, 410+160, 164+39, getcolour (255,255,255));
+		DrawBoxFilledGradient(412, 164, (410+158), (164+37), BLUECOL, PURPLECOL);
+	}else
+	{
+	    //Box for icon
+		DrawHLine (468, 468+42, 162, getcolour (255,255,255));
+		DrawBox (468, 163, 468+42, 163+39, getcolour (255,255,255));
+		DrawHLine (468, 468+42, 164+39, getcolour (255,255,255));
+		DrawBoxFilledGradient(468+2, 164, (468+40), (164+37), BLUECOL, PURPLECOL);
+	}
 
-	//Show icon and banner
-	if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_RGB) {
+	//Show banner if there is one
+	if (SDCARD_GetBannerFmt(gci.banner_fmt) == CARD_BANNER_RGB) {
 		bannerloadRGB(bannerdata);
 	}
-	else if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_CI) {
+	else if (SDCARD_GetBannerFmt(gci.banner_fmt) == CARD_BANNER_CI) {
 		bannerloadCI(bannerdataCI, tlutbanner);
 	}
+
 	//Show first icon
 	if ((gci.icon_fmt&CARD_ICON_MASK)== 1) {
 		//CI with shared palette
@@ -822,14 +839,14 @@ void showSaveInfo(int sel)
 
 	/*** Display relevant info for this save ***/
 	sprintf(txt, "#%d %s/%s", sel, gamecode, company);
-	DrawText(x, y, txt);
-	y += 60;
+	DrawText(x, y-4, txt);
+	y += 65;
 
 	//DrawText(x, y, "File Description:");
 	//y += 20;
 
-	char comment1[26];
-	char comment2[6];
+	char comment1[32];
+	char comment2[32];
 
 	//We go ahead and print the full 32byte comment lines - could go offscreen
 	//but we like to live dangerously
@@ -850,7 +867,7 @@ void showSaveInfo(int sel)
 	DrawText(x, y, comment2);
 	y += 20;
 	memset(comment2, 0, sizeof(comment2));
-	y += 20;
+	y += 10;
 
 	// Compute date/time
 	u32 t = gci.time;  // seconds since jan 1, 2000
@@ -862,6 +879,14 @@ void showSaveInfo(int sel)
 	*/
 
 	t += 946684800;	//let's add seconds since Epoch (jan 1, 1970 to jan 1,2000)
+
+	//Dolphin memory card manager and some homebrew store time with seconds since Epoch, which results in time being +30 years
+	/*
+	if (time(NULL) < 1893456000 && t > 1893456000)
+		t -= 946684800;
+	*/
+	//Above's solution will stop working after the year 2030... so better not to depend on current time, as it might be wrong
+
 	int month, day, year, hour, min, sec;
 	month = day = year = hour = min = sec = 0;
 	char monthstr[12][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
@@ -905,15 +930,19 @@ void showSaveInfo(int sel)
 	DrawText(x, y, txt);
 	y += 20;
 	//M-> Cant' move the file //C->can't copy the file //P->public file //Most frecuent: xxP
-	sprintf(txt, "Perm: %s%s%s",
+/*	sprintf(txt, "Perm: %s%s%s",
 	        (gci.unknown1 & 16) ? "M " : "x ",
 	        (gci.unknown1 & 8) ? "C " : "x ",
 	        (gci.unknown1 & 4) ? "P" : "x");
+*/
+	sprintf(txt, "Perm: %s%s%s",
+	        (gci.unknown1 & 16) ? "" : "Move | ",
+	        (gci.unknown1 & 8) ? "" : "Copy | ",
+	        (gci.unknown1 & 4) ? "Public" : "Private");
 	DrawText(x, y, txt);
 	y += 20;
 	sprintf(txt, "Copy Count: %02d", gci.unknown2);
 	DrawText(x, y, txt);
-	//y += 20;
 
 #ifdef DEBUG_VALUES
 	/*** Uncomment to print some debug info ***/
@@ -1282,7 +1311,7 @@ int ShowSelector (int saveinfo)
 void writeStatusBar( char *line1, char *line2)
 {
 	int bgcolor = getcolour(0xff,0xff,0xff);
-	DrawBoxFilled(10, 404, 610, 455, bgcolor);
+	DrawBoxFilled(10, 404, 640, 455, bgcolor);
 	//setfontcolour(84,174,211);
 	setfontcolour(28,28,28);
 	DrawText(40, 425, line1);
