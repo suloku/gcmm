@@ -18,6 +18,7 @@
 #define SDCARD_GetBannerFmt(banner_fmt)		((banner_fmt) & 0x03)
 #define SDCARD_GetIconFmt(icon_fmt,n)		(((icon_fmt)>>(2*(n))) & 0x03)
 #define SDCARD_GetIconSpeed(icon_speed,n)	(((icon_speed)>>(2*(n))) & 0x03)
+#define SDCARD_GetIconSpeedBounce(icon_speed,n,i)	((n) < (i) ? (((icon_speed)>>(2*(n))) & 0x03) : (((icon_speed)>>(2*((i*2)-2-n)) & 0x03)) )
 #define SDCARD_GetIconAnim(banner_fmt)		((banner_fmt) & 0x04)
 
 typedef struct {

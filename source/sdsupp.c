@@ -29,6 +29,7 @@
 extern u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
 extern Header cardheader;
 extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
+
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 icondata[8][1024] ATTRIBUTE_ALIGN (32);
@@ -36,8 +37,11 @@ extern u16 icondataRGB[8][1024] ATTRIBUTE_ALIGN (32);
 extern u16 tlut[9][256] ATTRIBUTE_ALIGN (32);
 extern u16 tlutbanner[256] ATTRIBUTE_ALIGN (32);
 extern int numicons;
-extern int frametable[8];
+extern int frametable[2*CARD_MAXICONS - 2];
+extern int iconindex[2*CARD_MAXICONS - 2];
 extern int lastframe;
+extern int lasticon;
+
 extern u8 filelist[1024][1024];
 extern u32 maxfile;
 extern GCI gci;
@@ -254,7 +258,6 @@ int SDLoadMCImageHeader(char *sdfilename)
 	//int bytesToRead = 0;
 	long bytesToRead = 0;
 	int i;
-	u16 check_fmt, check_speed;
 
 	/*** Clear the work buffers ***/
 	memset (FileBuffer, 0, MAXFILEBUFFER);
@@ -399,62 +402,88 @@ int SDLoadMCImageHeader(char *sdfilename)
 	fseek(handle, MCDATAOFFSET + OFFSET + gci.icon_addr, SEEK_SET);
 
 	/*** Get the Banner/Icon Data from the save file ***/
-	if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_RGB) {
+	if (SDCARD_GetBannerFmt(gci.banner_fmt) == CARD_BANNER_RGB) {
 		//RGB banners are 96*32*2 in size
 		fread (bannerdata, 1, 6144, handle);
 	}
-	else if ((gci.banner_fmt&CARD_BANNER_MASK) == CARD_BANNER_CI) {
+	else if (SDCARD_GetBannerFmt(gci.banner_fmt) == CARD_BANNER_CI) {
 		fread(bannerdataCI, 1, 3072, handle);
 		fread(tlutbanner, 1, 512, handle);
 	}
 	//Icon data
-	check_fmt = gci.icon_fmt;
-	check_speed = gci.icon_speed;
 	int shared_pal = 0;
 	lastframe = 0;
 	numicons = 0;
-	for (i=0;i<8;i++){
-		//this stores if the frame has a real icon or not
-		//no need to clear all values since we will only use the ones until last frame
-		frametable[i] = 0;
+	int j =0;
+    i=0;
+	int current_icon = 0;
+	for (current_icon=0;i<CARD_MAXICONS;++current_icon){
+
+		//no need to clear all values since we will only use the ones until lasticon
+		frametable[current_icon] = 0;
+		iconindex[current_icon] = 0;
 
 		//Animation speed is mandatory to be set even for a single icon
 		//When a speed is 0 there are no more icons
 		//Some games may have bits set after the "blank icon" both in
 		//speed (Baten Kaitos) and format (Wario Ware Inc.) bytes, which are just garbage
-		if (!(check_speed&CARD_ICON_MASK)){
+		if (!SDCARD_GetIconSpeed(gci.icon_speed,current_icon)){
 			break;
 		}else
 		{//We've got a frame
-			lastframe=i;
+			lastframe+=SDCARD_GetIconSpeed(gci.icon_speed,current_icon)*4;//Count the total frames
+			frametable[current_icon]=lastframe; //Store the end frame of the icon
 
-			if (check_fmt & CARD_ICON_MASK){
+			if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) != 0)
+			{
 				//count the number of real icons
 				numicons++;
-				frametable[i]=1; //There's a real icon
+				iconindex[current_icon]=current_icon; //Map the icon
 
 				//CI with shared palette
-				if ((check_fmt&CARD_ICON_MASK) == 1) {
-					fread(icondata[i], 1, 1024, handle);
+				if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) == 1) {
+					fread(icondata[current_icon], 1, 1024, handle);
 					shared_pal = 1;
 				}
 				//CI with palette after the icon
-				else if ((check_fmt&CARD_ICON_MASK) == 3)
+				else if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) == 3)
 				{
-					fread(icondata[i], 1, 1024, handle);
-					fread(tlut[i], 1, 512, handle);
+					fread(icondata[current_icon], 1, 1024, handle);
+					fread(tlut[current_icon], 1, 512, handle);
 				}
 				//RGB 16 bit icon
-				else if ((check_fmt&CARD_ICON_MASK) == 2)
+				else if (SDCARD_GetIconFmt(gci.icon_fmt,current_icon) == 2)
 				{
-						fread(icondataRGB[i], 1, 2048, handle);
+                    fread(icondataRGB[current_icon], 1, 2048, handle);
 				}
+			}else
+			{       //Get next real icon
+                    for(j=current_icon;j<CARD_MAXICONS;++j){
+
+                        if (SDCARD_GetIconFmt(gci.icon_fmt,j) != 0)
+                        {
+                            iconindex[current_icon]=j; //Map blank frame to next real icon
+                            break;
+                        }
+
+                    }
 			}
 		}
-
-		check_fmt = check_fmt >> 2;
-		check_speed = check_speed >> 2;
 	}
+
+    lasticon = current_icon-1;
+    //Now get icon indexes for ping-pong style icons
+    if (SDCARD_GetIconAnim(gci.banner_fmt) == CARD_ANIM_BOUNCE && current_icon>1) //We need at least 3 icons
+    {
+        j=current_icon;
+        for (i = current_icon-2; 0 < i; --i, ++j)
+        {
+            lastframe += SDCARD_GetIconSpeed(gci.icon_speed,i)*4;
+            frametable[j] = lastframe;
+            iconindex[j] = iconindex[i];
+        }
+        lasticon = j-1;
+    }
 	//Get the shared palette
 	if (shared_pal) fread(tlut[8], 1, 512, handle);
 
