@@ -317,6 +317,17 @@ void ShowAction (char *msg)
 	ShowScreen ();
 }
 
+void WaitRelease()
+{
+	//Wait for user to release the button
+	while (PAD_ButtonsHeld (0)
+#ifdef HW_RVL
+	        | WPAD_ButtonsHeld(0)
+#endif
+	      )
+		VIDEO_WaitVSync ();
+}
+
 /****************************************************************************
 * SelectMode
 ****************************************************************************/
@@ -342,12 +353,7 @@ int SelectMode ()
 	writeStatusBar("Choose your mode","");
 	ShowScreen();
 	/*** Clear any pending buttons - button 'debounce' ***/
-	while (PAD_ButtonsHeld (0)
-#ifdef HW_RVL
-	        | WPAD_ButtonsHeld(0)
-#endif
-	      )
-		VIDEO_WaitVSync ();
+	WaitRelease();
 
 	for (;;)
 	{
@@ -392,6 +398,7 @@ int SelectMode ()
 			}
 			return 500;
 		}
+/*
 		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_R)//Backup all mode
 		{
 			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_R))
@@ -400,6 +407,7 @@ int SelectMode ()
 			}
 			return 600;
 		}
+*/
 		while (PAD_ButtonsHeld (0) & PAD_TRIGGER_L)
 		{
 			if (PAD_ButtonsHeld (0) & PAD_BUTTON_Y){//Raw backup mode
@@ -467,6 +475,7 @@ int SelectMode ()
 			}
 			return 500;
 		}
+/*
 		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_1)//Backup all mode
 		{
 			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_1))
@@ -475,6 +484,7 @@ int SelectMode ()
 			}
 			return 600;
 		}
+*/
 		while (WPAD_ButtonsHeld (0) & WPAD_BUTTON_B)
 		{
 			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_MINUS){//Raw backup mode
@@ -543,6 +553,7 @@ void WaitButtonA ()
 		}
 	}
 #endif
+	WaitRelease();
 }
 
 /****************************************************************************
@@ -563,9 +574,15 @@ int WaitButtonAB ()
 		gc_btns = PAD_ButtonsDown (0);
 		wm_btns = WPAD_ButtonsDown (0);
 		if ( (gc_btns & PAD_BUTTON_A) || (wm_btns & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A)) )
+		{	
+			WaitRelease();
 			return 1;
+		}
 		else if ( (gc_btns & PAD_BUTTON_B) || (wm_btns & (WPAD_BUTTON_B | WPAD_CLASSIC_BUTTON_B)) )
+		{
+			WaitRelease();
 			return 0;
+		}
 	}
 #else
 	u32 gc_btns;
@@ -576,11 +593,18 @@ int WaitButtonAB ()
 	{
 		gc_btns = PAD_ButtonsDown (0);
 		if ( gc_btns & PAD_BUTTON_A )
+		{
+			WaitRelease();
 			return 1;
+		}
 		else if ( gc_btns & PAD_BUTTON_B )
+		{
+			WaitRelease();
 			return 0;
+		}
 	}
 #endif
+
 }
 
 /****************************************************************************
@@ -601,9 +625,15 @@ int WaitButtonAZ ()
 		gc_btns = PAD_ButtonsDown (0);
 		wm_btns = WPAD_ButtonsDown (0);
 		if ( (gc_btns & PAD_BUTTON_A) || (wm_btns & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A)) )
+		{
+			WaitRelease();
 			return 1;
+		}
 		else if ( (gc_btns & PAD_TRIGGER_Z) || (wm_btns & (WPAD_BUTTON_2 | WPAD_CLASSIC_BUTTON_ZR | WPAD_CLASSIC_BUTTON_ZL)) )
+		{
+			WaitRelease();
 			return 0;
+		}
 	}
 #else
 	u32 gc_btns;
@@ -614,11 +644,18 @@ int WaitButtonAZ ()
 	{
 		gc_btns = PAD_ButtonsDown (0);
 		if ( gc_btns & PAD_BUTTON_A )
+		{
+			WaitRelease();
 			return 1;
+		}
 		else if ( gc_btns & PAD_TRIGGER_Z )
+		{
+			WaitRelease();
 			return 0;
+		}
 	}
 #endif
+
 }
 
 
@@ -812,14 +849,14 @@ void showSaveInfo(int sel)
 		DrawHLine (410, 410+160, 162, getcolour (255,255,255));
 		DrawBox (410, 163, 410+160, 163+39, getcolour (255,255,255));
 		DrawHLine (410, 410+160, 164+39, getcolour (255,255,255));
-		DrawBoxFilledGradient(412, 164, (410+158), (164+37), BLUECOL, PURPLECOL);
+		DrawBoxFilledGradient(412, 164, (410+158), (164+37), BLUECOL, PURPLECOL, LOCATION);
 	}else
 	{
 	    //Box for icon
 		DrawHLine (468, 468+42, 162, getcolour (255,255,255));
 		DrawBox (468, 163, 468+42, 163+39, getcolour (255,255,255));
 		DrawHLine (468, 468+42, 164+39, getcolour (255,255,255));
-		DrawBoxFilledGradient(468+2, 164, (468+40), (164+37), BLUECOL, PURPLECOL);
+		DrawBoxFilledGradient(468+2, 164, (468+40), (164+37), BLUECOL, PURPLECOL, LOCATION);
 	}
 
 	//Show banner if there is one
@@ -919,7 +956,7 @@ void showSaveInfo(int sel)
 	sprintf(txt, "Time: %02d:%02d:%02d", hour, min, sec);
 	DrawText(x, y, txt);
 	y += 20;
-	sprintf(txt, "Blocks: %d", gci.filesize8);
+	sprintf(txt, "Blocks: %02d (%d free)", gci.filesize8, FreeBlocks(MEM_CARD));
 	DrawText(x, y, txt);
 	y += 20;
 	//M-> Cant' move the file //C->can't copy the file //P->public file //Most frecuent: xxP
@@ -970,7 +1007,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		ypos = (screenheight - (PAGESIZE * 20+40)) >> 1;
 		ypos += 26;
 		j = 0;
-		for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); i++){
+		for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); ++i){
 			//changed this to limit characters shown in filename since display gets weird
 			//if we let the entire filename appear
 			strncpy (text, (char*)filelist[i], textlen);
@@ -1010,24 +1047,13 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		ypos = (screenheight - (PAGESIZE * 20+40)) >> 1;
 		ypos += 26;
 		setfontcolour (0xff, 0xff, 0xff);
-		//user just pressed up
-		if (upordown == 1) {
-			strncpy (text, (char*)filelist[selection+1], textlen);
-			text[textlen] = 0;
-			for (w = 0; w < 20; w++){
-				DrawLineFast (35, 330, (((selection-offset)+1) * 20) + (ypos - 14) + w, 84, 174,211);
-			}
-			DrawText (35, (((selection-offset)+1) * 20) + ypos, text);
+		//user just pressed up, down, left or right, upordown holds the correction needded
+		strncpy (text, (char*)filelist[selection+upordown], textlen);
+		text[textlen] = 0;
+		for (w = 0; w < 20; w++){
+			DrawLineFast (35, 330, (((selection-offset)+upordown) * 20) + (ypos - 14) + w, 84, 174,211);
 		}
-		//user just pressed down
-		else if (upordown == 2) {
-			strncpy (text, (char*)filelist[selection-1], textlen);
-			text[textlen] = 0;
-			for (w = 0; w < 20; w++){
-				DrawLineFast (35, 330, (((selection-offset)-1) * 20) + (ypos - 14) + w, 84, 174,211);
-			}
-			DrawText (35, (((selection-offset)-1) * 20) + ypos, text);
-		}
+		DrawText (35, (((selection-offset)+upordown) * 20) + ypos, text);
 		//Important to call ShowScreen here if we want the redraw to
 		//appear faster - without it the highlight box glides too much
 		ShowScreen();
@@ -1045,6 +1071,11 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 			showCardInfo(selection);
 		}
 	}
+	//Draw the page we are on
+	sprintf (text, "%02.0f/%02.0f", (((selection)/PAGESIZE)+0.9), (((maxfile)/PAGESIZE)+0.9) );
+	setfontsize(10);
+	DrawText(298, 80, text);
+	setfontsize(14);
 	//Need this to show info update from showSaveInfo
 	ShowScreen();
 }
@@ -1140,7 +1171,7 @@ int ShowSelector (int saveinfo)
 
 #ifdef DEBUG_VALUES
 	u8 fps = 0;
-	char test[1024];
+	char text[1024];
 #endif
 
 	while (quit == 0)
@@ -1148,31 +1179,36 @@ int ShowSelector (int saveinfo)
 
 		if (redraw)
 		{
-			//clear buffers
-			memset((u8*)bannerdata, 0, CARD_BANNER_W*CARD_BANNER_H*2);
-			memset((u8*)bannerdataCI, 0, CARD_BANNER_W*CARD_BANNER_H);
-			memset((u8*)icondata, 0, 8*1024);
-			memset((u8*)icondataRGB, 0, 8*1024*2);
-			memset((u8*)tlut, 0, 9*512);
-			memset((u8*)tlutbanner, 0, 512);
+			if (saveinfo){
+				//clear buffers
+				memset((u8*)bannerdata, 0, CARD_BANNER_W*CARD_BANNER_H*2);
+				memset((u8*)bannerdataCI, 0, CARD_BANNER_W*CARD_BANNER_H);
+				memset((u8*)icondata, 0, 8*1024);
+				memset((u8*)icondataRGB, 0, 8*1024*2);
+				memset((u8*)tlut, 0, 9*512);
+				memset((u8*)tlutbanner, 0, 512);
+			}
 
 			ShowFiles (offset, selection, upordown, saveinfo);
 
 			//reinit variables
 			redraw = 0;
-			currframe = 0;
-			bounceindex = CARD_MAXICONS;//This ensures getting correct duration values for non-bouncing animations
-			if (SDCARD_GetIconAnim(gci.banner_fmt) == CARD_ANIM_BOUNCE)
-            {
-                bounceindex = 0;
-                while(SDCARD_GetIconSpeed(gci.icon_speed, bounceindex) != 0 && bounceindex < CARD_MAXICONS)
-                {
-                    bounceindex++;
-                }
-            }
+			if (saveinfo)
+			{
+				currframe = 0;
+				bounceindex = CARD_MAXICONS;//This ensures getting correct duration values for non-bouncing animations
+				if (SDCARD_GetIconAnim(gci.banner_fmt) == CARD_ANIM_BOUNCE)
+				{
+					bounceindex = 0;
+					while(SDCARD_GetIconSpeed(gci.icon_speed, bounceindex) != 0 && bounceindex < CARD_MAXICONS)
+					{
+						bounceindex++;
+					}
+				}
 #ifdef USE_TIME
-            lasttime -= 250;//to ensure first icon will be loaded
+				lasttime -= 250;//to ensure first icon will be loaded
 #endif
+			}
 		}
 
 #ifdef DEBUG_VALUES
@@ -1180,7 +1216,7 @@ int ShowSelector (int saveinfo)
 		sprintf (test, "%d FPS%d numicons%02d lasticon%02d CF%02d LF%03d FT%03d II%02d animtype%d speed%02d", retraceCount, fps, numicons, lasticon, currframe, lastframe, frametable[currframe], iconindex[currframe], SDCARD_GetIconAnim(gci.banner_fmt), SDCARD_GetIconSpeedBounce(gci.icon_speed,currframe,bounceindex)*4 );
 		ShowAction(test);
 #endif
-        if (lastframe)
+        if (lastframe && saveinfo)
         {
 #ifdef USE_TIME
             currtime = ticks_to_millisecs(gettime());
@@ -1208,7 +1244,7 @@ int ShowSelector (int saveinfo)
                 else if ( SDCARD_GetIconFmt(gci.icon_fmt,iconindex[currframe])== 2) {
                     iconloadRGB(icondataRGB[iconindex[currframe]]);
                 }
-                //ShowScreen();
+                ShowScreen();
 
                 currframe ++;
                 if (currframe > lasticon)
@@ -1221,10 +1257,21 @@ int ShowSelector (int saveinfo)
 #endif
         }
 
-		p = PAD_ButtonsDown (0);
+		p = PAD_ButtonsHeld (0);
 #ifdef HW_RVL
-		wp = WPAD_ButtonsDown (0);
+		wp = WPAD_ButtonsHeld (0);
 #endif
+
+		//Slow down scrolling a little
+		if ( (p & PAD_BUTTON_DOWN) | (p & PAD_BUTTON_UP) | (p & PAD_BUTTON_LEFT) | (p & PAD_BUTTON_RIGHT)
+#ifdef HW_RVL
+			| (wp & WPAD_BUTTON_DOWN) | (wp & WPAD_BUTTON_UP) | (wp & WPAD_BUTTON_LEFT) | (wp & WPAD_BUTTON_RIGHT)
+#endif
+		)
+		{
+			usleep(50000);
+		}
+
 		if ((p & PAD_BUTTON_B )
 #ifdef HW_RVL
 		        | (wp & WPAD_BUTTON_B)
@@ -1233,41 +1280,44 @@ int ShowSelector (int saveinfo)
 		{
 			offsetchanged = true;
 			cancel = 1;
+			lastframe = 0;
 			return -1;
 		}
 
-		if ((p & PAD_TRIGGER_R)
+		else if ((p & PAD_TRIGGER_R)
 #ifdef HW_RVL
 		        | (wp & WPAD_BUTTON_1)
 #endif
 		   )
 		{
 				doall = 1;
+				lastframe = 0;
 				return -1;
 		}
 
 #ifdef HW_RVL
-		if (power)
+		else if (power)
 		{
 			PowerOff();
 		}
 #endif
 
-		if ((p & PAD_BUTTON_A)
+		else if ((p & PAD_BUTTON_A)
 #ifdef HW_RVL
 		        | (wp & WPAD_BUTTON_A)
 #endif
 		   )
 		{
+			lastframe = 0;
 			return selection;
 		}
-		if ((p & PAD_BUTTON_DOWN)
+		else if ((p & PAD_BUTTON_DOWN)
 #ifdef HW_RVL
 		        | (wp & WPAD_BUTTON_DOWN)
 #endif
 		   )
 		{
-			upordown = 2;
+			upordown = -1;
 			selection++;
 			if (selection == maxfile)
 			{
@@ -1281,7 +1331,7 @@ int ShowSelector (int saveinfo)
 			}
 			redraw = 1;
 		}
-		if ((p & PAD_BUTTON_UP)
+		else if ((p & PAD_BUTTON_UP)
 #ifdef HW_RVL
 		        | (wp & WPAD_BUTTON_UP)
 #endif
@@ -1292,7 +1342,53 @@ int ShowSelector (int saveinfo)
 			if (selection < 0)
 			{
 				selection = maxfile - 1;
-				offset = selection - PAGESIZE + 1;
+				offset = selection - PAGESIZE + 1 + (PAGESIZE-(maxfile%PAGESIZE));
+				offsetchanged = true;
+			}
+			if (selection < offset)
+			{
+				offset -= PAGESIZE;
+				offsetchanged = true;
+			}
+			if (offset < 0)
+			{
+				offset = 0;
+			}
+			redraw = 1;
+		}
+
+		else if ((p & PAD_BUTTON_RIGHT)
+#ifdef HW_RVL
+		        | (wp & WPAD_BUTTON_RIGHT)
+#endif
+		   )
+		{
+			upordown = -5;
+			selection+=5;
+			if (selection >= maxfile)
+			{
+				selection = offset = 0;
+				offsetchanged = true;
+			}
+			if ((selection - offset) >= PAGESIZE)
+			{
+				offset += PAGESIZE;
+				offsetchanged = true;
+			}
+			redraw = 1;
+		}
+		else if ((p & PAD_BUTTON_LEFT)
+#ifdef HW_RVL
+		        | (wp & WPAD_BUTTON_LEFT)
+#endif
+		   )
+		{
+			upordown = 5;
+			selection-=5;
+			if (selection < 0)
+			{
+				selection = maxfile - 1;
+				offset = selection - PAGESIZE + 1 + (PAGESIZE-(maxfile%PAGESIZE));
 				offsetchanged = true;
 			}
 			if (selection < offset)
@@ -1324,7 +1420,7 @@ void writeStatusBar( char *line1, char *line2)
 void clearLeftPane()
 {
 	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(34, 110, 333, 392, bgcolor);
+	DrawBoxFilled(34, 72, 333, 392, bgcolor);
 }
 
 void clearRightPane()
@@ -1372,19 +1468,32 @@ void DrawBoxFilled (int x1, int y1, int x2, int y2, int color)
 		DrawHLine (x1, x2, h, color);
 }
 
-void DrawBoxFilledGradient (int x1, int y1, int x2, int y2, u32 color1, u32 color2)
+void DrawBoxFilledGradient (int x1, int y1, int x2, int y2, u32 color1, u32 color2, float location)
 {
 	int r1 = (color1&0x0000FF) >> 0;	int g1 = (color1&0x00FF00) >> 8;	int b1 = (color1&0xFF0000) >> 16;
 	int r2 = (color2&0x0000FF) >> 0;	int g2 = (color2&0x00FF00) >> 8;	int b2 = (color2&0xFF0000) >> 16;
 
-	int r,g,b;
+	int r,g,b, midr, midg, midb;
+	midr = (r1 * 0.5) + (r2 * (1 - 0.5));
+	midg = (g1 * 0.5) + (g2 * (1 - 0.5));
+	midb = (b1 * 0.5) + (b2 * (1 - 0.5));	
 	float p;
 	int h;
 	for (h = y1; h <= y2; h++){
-		p = ((float)(y2-h))/((float)(y2-y1));
-		r = (r1 * p) + (r2 * (1 - p));
-		g = (g1 * p) + (g2 * (1 - p));
-		b = (b1 * p) + (b2 * (1 - p));
+		if ((y2-h) > (y2-y1)*location)
+		{	
+			p = ((float)(y2-h)-((y2-y1)*location))/((float)(y2-y1)-((y2-y1)*location));
+			r = (r1 * p) + (midr * (1 - p));
+			g = (g1 * p) + (midg * (1 - p));
+			b = (b1 * p) + (midb * (1 - p));
+		}
+		else
+		{
+			p = ((float)(y2-h))/((float)(y2-y1)*location);
+			r = (midr * p) + (r2 * (1 - p));
+			g = (midg * p) + (g2 * (1 - p));
+			b = (midb * p) + (b2 * (1 - p));		
+		}
 		DrawHLine (x1, x2, h, getcolour(r,g,b));
 	}
 }

@@ -123,7 +123,8 @@ static int initFAT(int device)
 		}
 	}
 #else
-	if (!device){
+	if (device)
+	{//Memcard in SLOT B, SD gecko in SLOT A
 		__io_gcsda.startup();
 		if (!__io_gcsda.isInserted())
 		{
@@ -137,7 +138,7 @@ static int initFAT(int device)
 			sleep(1);
 			return 0;
 		}
-	}else
+	}else //Memcard in SLOT A, SD gecko in SLOT B
 	{
 		__io_gcsdb.startup();
 		if (!__io_gcsdb.isInserted())
@@ -644,7 +645,8 @@ int main ()
 	initialise_power();
 	have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT 32 USB device?", "USB", "SD"));
 #else
-	MEM_CARD ^= WaitPromptChoice ("Please select the slot where SD Gecko is inserted", "SLOT B", "SLOT A");
+	//Returns 1 (memory card in slot B, sd gecko in slot A) if A button was pressed and 0 if B button was pressed
+	MEM_CARD = WaitPromptChoice ("Please select the slot where SD Gecko is inserted", "SLOT B", "SLOT A");
 	have_sd = initFAT(MEM_CARD);
 #endif
 

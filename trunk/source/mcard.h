@@ -7,6 +7,7 @@
 void GCIMakeHeader();
 void ExtractGCIHeader();
 int MountCard(int cslot);
+u16 FreeBlocks(s32 chn);
 int CardGetDirectory (int slot);
 void CardListFiles ();
 int CardReadFileHeader (int slot, int id);

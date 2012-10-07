@@ -17,8 +17,14 @@
 #include "raw.h"
 
 #define mem_free(x) {free(x);x=NULL;}
+//Enabling this definition will enable additional checks to ensure raw restore worked
+#define DEBUGRAW
 
 u8 *CardBuffer = 0;
+#ifdef DEBUGRAW
+u8 *CheckBuffer = 0;
+u8 *EraseCheckBuffer = 0;
+#endif
 s8 read_data = 0;
 s8 write_data = 0;
 s8 erase_data = 0;
@@ -109,6 +115,7 @@ u64 Card_SerialNo(s32 slot)
 	if(err < 0 )
 	{
 		WaitCardError("SerialNo Sectsize", err);
+		CARD_Unmount(slot);
 		return -1;
 	}
 
@@ -116,6 +123,7 @@ u64 Card_SerialNo(s32 slot)
 	if(CardBuffer == NULL)
 	{
 		WaitPrompt("SerialNo: Failed to malloc memory.");
+		CARD_Unmount(slot);
 		return -1;
 	}
 	s32 current_block = 0;
@@ -127,6 +135,7 @@ u64 Card_SerialNo(s32 slot)
 
 		if( (err != 0) || current_block >= 1)
 			break;
+		DCInvalidateRange(CardBuffer+SectorSize*current_block,SectorSize);
 		err = __card_read(slot,0,SectorSize,CardBuffer+SectorSize*current_block,_read_callback);
 		if(err == 0)
 		{
@@ -140,6 +149,7 @@ u64 Card_SerialNo(s32 slot)
 		{
 			mem_free(CardBuffer);
 			WaitCardError("BakRaw __read", err);
+			CARD_Unmount(slot);
 			return -1;
 		}
 	}
@@ -153,6 +163,7 @@ u64 Card_SerialNo(s32 slot)
     u64 serialA = serial1[0]^serial1[1]^serial1[2]^serial1[3];
 
 	mem_free(CardBuffer);
+	CARD_Unmount(slot);
 	return serialA;
 }
 
@@ -222,6 +233,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	if(err < 0 )
 	{
 		WaitCardError("BakRaw Sectsize", err);
+		CARD_Unmount(slot);
 		return -1;
 	}
 
@@ -229,6 +241,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	if(err < 0 )
 	{
 		WaitCardError("BakRaw Blockcount", err);
+		CARD_Unmount(slot);
 		return -1;
 	}	
 	CardBuffer = (u8*)memalign(32,SectorSize*BlockCount);
@@ -236,6 +249,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	{
 		//printf("failed to malloc memory. fail\n");
 		WaitPrompt("BackRaw: Failed to malloc memory.");
+		CARD_Unmount(slot);
 		return -1;
 	}
 	s32 current_block = 0;
@@ -260,6 +274,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 		mem_free(CardBuffer);
 		//printf("can not create file on SD\n");
 		WaitPrompt("BackRaw: cannot create file on SD.");
+		CARD_Unmount(slot);
 		return -1;
 	}
 	//printf("dumping...\n");
@@ -267,10 +282,11 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	{
 		read_data = 0;
 		//printf("\rReading : %u bytes of %u (block %d)...",read,BlockCount*SectorSize,current_block);
-		sprintf(msg, "Reading... : Block %d of %d (%u bytes of %u)",current_block,BlockCount,read,BlockCount*SectorSize);
+		sprintf(msg, "Reading...: Block %d of %d (%u bytes of %u)",current_block,BlockCount,read,BlockCount*SectorSize);
 		writeStatusBar(msg, "");
 		if( (err != 0) || current_block >= BlockCount)
 			break;
+		DCInvalidateRange(CardBuffer+SectorSize*current_block,SectorSize);
 		err = __card_read(slot,SectorSize*current_block,SectorSize,CardBuffer+SectorSize*current_block,_read_callback);
 		if(err == 0)
 		{
@@ -286,6 +302,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 			//printf("\nerror reading data : %d...\n",err);
 			fclose(dumpFd);
 			WaitCardError("BakRaw __read", err);
+			CARD_Unmount(slot);
 			return -1;
 		}
 	}
@@ -302,6 +319,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	if(bytes_writen != NULL)
 		*bytes_writen = writen;
 	mem_free(CardBuffer);
+	CARD_Unmount(slot);
 	return 1;
 }
 
@@ -329,6 +347,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 	if(err < 0 )
 	{
 		WaitCardError("RestRaw Sectsize", err);
+		CARD_Unmount(slot);
 		return -1;
 	}
 
@@ -336,6 +355,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 	if(err < 0 )
 	{
 		WaitCardError("RestRaw Blockcount", err);
+		CARD_Unmount(slot);
 		return -1;
 	}	
 	CardBuffer = (u8*)memalign(32,SectorSize*BlockCount);
@@ -343,8 +363,29 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 	{
 		//printf("failed to malloc memory. fail\n");
 		WaitPrompt("RestRaw: Failed to malloc memory.");
+		CARD_Unmount(slot);
 		return -1;
 	}
+#ifdef DEBUGRAW
+	CheckBuffer = (u8*)memalign(32,SectorSize);
+	if(CheckBuffer == NULL)
+	{
+		mem_free(CardBuffer);
+		WaitPrompt("RestRaw: Failed to malloc memory (CheckBuffer)");
+		CARD_Unmount(slot);
+		return -1;
+	}
+	EraseCheckBuffer = (u8*)memalign(32,SectorSize);
+	if(CheckBuffer == NULL)
+	{
+		mem_free(CardBuffer);
+		mem_free(CheckBuffer);
+		WaitPrompt("RestRaw: Failed to malloc memory (EraseCheckBuffer)");
+		CARD_Unmount(slot);
+		return -1;
+	}
+	memset(EraseCheckBuffer, 0xFF, SectorSize);
+#endif	
 
 
 	/*** Make fullpath filename ***/
@@ -355,8 +396,13 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 	if (dumpFd <= 0)
 	{
 		mem_free(CardBuffer);
+#ifdef DEBUGRAW
+		mem_free(CheckBuffer);
+		mem_free(EraseCheckBuffer);
+#endif
 		sprintf(msg, "Couldn't open %s", filename);		
 		WaitPrompt (msg);
+		CARD_Unmount(slot);
 		return -1;
 	}
 
@@ -372,7 +418,12 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 			//incorrect dump size D:<
 			fclose(dumpFd);
 			mem_free(CardBuffer);
+#ifdef DEBUGRAW
+			mem_free(CheckBuffer);
+			mem_free(EraseCheckBuffer);
+#endif
 			WaitPrompt ("Card and image sizes differ");
+			CARD_Unmount(slot);
 			return -1;
 		}
 	}
@@ -416,7 +467,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 			while( 1 )
 			{
 				//printf("\rWriting... : %d of %d (block %d)",writen,BlockCount*SectorSize,current_block);
-				sprintf(msg, "Writing... : Block %d of %d (%d of %d)",current_block,BlockCount,writen,BlockCount*SectorSize);
+				sprintf(msg, "Writing...: Block %d of %d (%d of %d)",current_block,BlockCount,writen,BlockCount*SectorSize);
 				ShowAction (msg);
 				//gprintf("\rWriting... : %d of %d (block %d of %d)",writen,BlockCount*SectorSize,current_block,BlockCount);
 				write_data = 0;
@@ -424,6 +475,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 				if( (err != 0) || current_block >= BlockCount || writen == BlockCount*SectorSize)
 					break;
 				
+				//DCStoreRange is called in card.c before actual writing to the card
 				DCStoreRange(CardBuffer+writen,write_len);
 				if(writen == 0 || !(writen%SectorSize)){
 					//s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
@@ -433,13 +485,63 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 						while(erase_data == 0)
 							usleep(1*1000); //sleep untill the erase is done which sadly takes alot longer then read
 						__card_sync(slot);
+#ifdef DEBUGRAW
+						memset(CheckBuffer,0,write_len);
+						DCInvalidateRange(CheckBuffer,write_len);
+						read_data = 0;
+						err = __card_read(slot,writen,write_len,CheckBuffer,_read_callback);
+						while(read_data == 0)
+							usleep(1*1000);
+						
+						if(err == 0)
+						{
+							if(!memcmp(EraseCheckBuffer,CheckBuffer,write_len))
+							{
+								//printf("read and write are the same y0\n");
+							}
+							else
+							{
+								//Uncomment to dump contents that where read
+								
+								FILE* dump = fopen("fat:/sectcheck_dump.bin","wb");
+								//fwrite((u8*)ptr+writen,sizeof(u32),1,dumpFd);
+								fwrite(CheckBuffer,1,write_len,dump);
+								fclose(dump);
+								
+								fclose(dumpFd);
+								mem_free(CardBuffer);
+								mem_free(CheckBuffer);
+								mem_free(EraseCheckBuffer);
+								sprintf(msg, "Error! _sectorerase failed for unknown reasons at sector %d!", current_block);
+								WaitPrompt (msg);
+								CARD_Unmount(slot);
+								return -1;
+							}
+						}
+						else
+						{
+							fclose(dumpFd);
+							mem_free(CardBuffer);
+							mem_free(CheckBuffer);
+							mem_free(EraseCheckBuffer);
+							sprintf(msg, "Error reading data(%d) Memory card could be corrupt now!!!",err);
+							WaitPrompt (msg);
+							CARD_Unmount(slot);
+							return -1;
+						}
+#endif						
 					}else
 					{
 						fclose(dumpFd);
 						mem_free(CardBuffer);
+#ifdef DEBUGRAW
+						mem_free(CheckBuffer);
+						mem_free(EraseCheckBuffer);
+#endif						
 						//printf("\nerror writing data(%d) Memory card could be corrupt now!!!\n",err);
 						sprintf(msg, "error erasing sector(%d) Memory card could be corrupt now!!!",err);
 						WaitPrompt (msg);
+						CARD_Unmount(slot);
 						return -1;
 					}
 				}
@@ -451,7 +553,53 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 						usleep(1*1000); //sleep untill the write is done which sadly takes alot longer then read
 					__card_sync(slot);
 
-
+#ifdef DEBUGRAW
+					memset(CheckBuffer,0,write_len);
+					DCInvalidateRange(CheckBuffer,write_len);
+					read_data = 0;
+					//err = __card_read(slot,SectorSize*current_block,SectorSize,CheckBuffer,_read_callback);
+					err = __card_read(slot,writen,write_len,CheckBuffer,_read_callback);
+					while(read_data == 0)
+						usleep(1*1000);
+					
+					if(err == 0)
+					{
+						if(!memcmp(CardBuffer+writen,CheckBuffer,write_len))
+						{
+							//printf("read and write are the same y0\n");
+						}
+						else
+						{
+							//printf("different data. writing to SD (0x%08X), error %d\n",*check,CardError);
+							//Uncomment to dump contents that where read
+							
+							FILE* dump = fopen("fat:/check_dump.bin","wb");
+							//fwrite((u8*)ptr+writen,sizeof(u32),1,dumpFd);
+							fwrite(CheckBuffer,1,write_len,dump);
+							fclose(dump);
+							
+							fclose(dumpFd);
+							mem_free(CardBuffer);
+							mem_free(CheckBuffer);
+							mem_free(EraseCheckBuffer);
+							sprintf(msg, "Error! Writing failed for unknown reasons at block %d!", current_block);
+							WaitPrompt (msg);
+							CARD_Unmount(slot);
+							return -1;
+						}
+					}
+					else
+					{
+						fclose(dumpFd);
+						mem_free(CardBuffer);
+						mem_free(CheckBuffer);
+						mem_free(EraseCheckBuffer);
+						sprintf(msg, "Error reading data(%d) Memory card could be corrupt now!!!",err);
+						WaitPrompt (msg);
+						CARD_Unmount(slot);
+						return -1;
+					}
+#endif
 					writen = writen + write_len;
 					upblock=upblock+write_len;
 					if(upblock == SectorSize)
@@ -464,9 +612,14 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 				{
 					fclose(dumpFd);
 					mem_free(CardBuffer);
+#ifdef DEBUGRAW
+					mem_free(CheckBuffer);
+					mem_free(EraseCheckBuffer);
+#endif
 					//printf("\nerror writing data(%d) Memory card could be corrupt now!!!\n",err);
 					sprintf(msg, "error writing data(%d) Memory card could be corrupt now!!!",err);
 					WaitPrompt (msg);
+					CARD_Unmount(slot);
 					return -1;
 				}
 			}
@@ -475,11 +628,21 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 			if(bytes_writen != NULL)
 				*bytes_writen = writen;
 			mem_free(CardBuffer);
+#ifdef DEBUGRAW
+			mem_free(CheckBuffer);
+			mem_free(EraseCheckBuffer);
+#endif		
+			CARD_Unmount(slot);
 			return 1;		
 		}
 	}
 	
 	mem_free(CardBuffer);
+#ifdef DEBUGRAW
+	mem_free(CheckBuffer);
+	mem_free(EraseCheckBuffer);
+#endif
+	CARD_Unmount(slot);
 	return -1;
 
 }
