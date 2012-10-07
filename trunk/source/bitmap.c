@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bitmap.h"
+#include "freetype.h"
 #include "gci.h"
 
 extern GCI gci;
@@ -99,6 +100,7 @@ u32 ShowBMP(u8 * bmpfile) {
     u8 *bgr;
     u32 fboffset;
     u32 rows, cols;
+	static u8 firstcall = 1;
 
     bitmap = (WINBITMAP *) bmpfile;
 
@@ -146,16 +148,45 @@ u32 ShowBMP(u8 * bmpfile) {
     /*** Move to NEXT framebuffer ***/
     whichfb ^= 1;
 
-    for (rows = 0; rows < height; rows++) {
-        for (cols = 0; cols < (fbwidth >> 1); cols++) {
-            xfb[whichfb][fboffset + cols] =CvtRGB (bgr[2], bgr[1], bgr[0],
-                    bgr[5], bgr[4], bgr[3]);
-            bgr += 6;
-        }
+	if (firstcall)
+	{
+		DrawBoxFilled(0,0,vmode->fbWidth-1,vmode->xfbHeight-1,0xFF80FF80);	
+		for (rows = 0; rows < height; rows++) {
+			for (cols = 0; cols < (fbwidth >> 1); cols++) {
+				if (rows < 64 || rows > 398 || cols < (31>>1) || cols > (341>>1))
+				{
+					//xfb[whichfb][fboffset + cols] =CvtRGB (255,255,255,255,255,255);
+				}
+				else
+				{
+					xfb[whichfb][fboffset-(320*20) + (66)+cols] =CvtRGB (bgr[2], bgr[1], bgr[0],
+							bgr[5], bgr[4], bgr[3]);				
+				}
 
-        fboffset -= 320; /*** Go up one row ***/
+				bgr += 6;
+			}
 
-    } /*** Outer row loop ***/
+			fboffset -= 320; /*** Go up one row ***/
+
+		} /*** Outer row loop ***/
+	}
+	else
+	{
+		for (rows = 0; rows < height; rows++) {
+			for (cols = 0; cols < (fbwidth >> 1); cols++) {
+				xfb[whichfb][fboffset + cols] =CvtRGB (bgr[2], bgr[1], bgr[0],
+						bgr[5], bgr[4], bgr[3]);
+				bgr += 6;
+			}
+
+			fboffset -= 320; /*** Go up one row ***/
+
+		} /*** Outer row loop ***/
+	}
+	if (firstcall)
+	{
+		firstcall = 0;
+	}
 
     /*** Setup the video to display this picture ***/
     /*VIDEO_SetNextFramebuffer (xfb[whichfb]);
@@ -188,7 +219,7 @@ void ShowBanner(u8 *banner) {
     fboffset = ((640 - fbwidth) >> 1) >> 1;
     fboffset += (((vmode->xfbHeight - height) >> 1) * 320);
 	fboffset -= (height * 320 * 2);
-	fboffset -= (height * 90);
+	fboffset += (height * 10);
 	fboffset += width/2+3; //at this point the banner is perfectly aligned with right window
 	fboffset += ((height *320)>>1)+3;
 
@@ -231,7 +262,7 @@ void ShowIcon(u8 *icon) {
 	fbwidth = CARD_ICON_W;
     fboffset += (((vmode->xfbHeight - height) >> 1) * 320);
 	fboffset -= (height * 320 * 2);
-	fboffset -= (height * 90);
+	fboffset += (height * 10);
 	fboffset += width/2+3;
 	fboffset += ((height *320)>>1)+3;
 

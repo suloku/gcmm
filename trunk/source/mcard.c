@@ -796,12 +796,15 @@ void MC_DeleteMode(int slot)
 	int selected = 0;
 	int erase;
 	clearRightPane();
-	DrawText(390,130,"D e l e t e   M o d e");
-	writeStatusBar("Choose a file with UP button or DOWN button ", "Press A button to delete ") ;
+	DrawText(386,130,"D e l e t e   M o d e");
+	DrawText(386,134,"_____________________");
 	char msg[1024];
 
+	writeStatusBar("Reading memory card... ", "");
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (slot);
+	
+	writeStatusBar("Choose a file with UP button or DOWN button ", "Press A button to delete ") ;
 
 	/*** If it's a blank card, get out of here ***/
 	if (!memitems)

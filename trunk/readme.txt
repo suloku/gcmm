@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                         GCMM 1.3                             ·oø×O0|
+|0O×øo·                    GCMM 1.4 by suloku                        ·oø×O0|
 |                   http://code.google.com/p/gcmm                           |
 |                          (Under GPL License)                              |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
@@ -22,13 +22,30 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 * Wiimote and GameCube controller support
 * Power button support
 * Front SD and FAT32 USB device (wii) and SDGecko (gamecube) support
-* Shows savegame information, alongside Icon and Banner!
+* Shows savegame information, alongside animated Icon and Banner!
 * A (somewhat) nice UI
 * Open Source!
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+[What's New 1.4 - october 08, 2012 - By suloku]
+* Animated icon alongside several (minor) graphical improvements
+* Ability to select SD Gecko slot in GameCube mode (just like Wii mode SD/USB prompt)
+* Moved "Backup All" to Backup Mode (press R/1 when in Backup Mode)
+* Added an analog "Restore All" in Restore Mode (overwriting is supported)
+* Shows filename when prompted to overwrite (also in "Restore All")
+* Savegame permisions are shown in a more explicit and user friendly way
+* Shows memory card freeblocks
+* Page number display in file selector
+* Left and right now scroll 5 file entries at once
+* Scrolling of file entries can be done holding the button (up/down/left/right)
+* Added security checks to Raw Restore Mode
+* Added some special characters to the font (needed for savegame comments)
+* Minor code tweaks
+
+Lots of thanks to bm123456 and themanuel for beta testing and support!
 
 [What's New 1.3 - september 14, 2012 - By suloku]
 
@@ -218,7 +235,7 @@ This document doesn't cover how to do any of that. A good source for information
 
 They are shown at the screen.
 
-Raw mode controls:
+Raw mode controls: hold L (gamecube pad) or B (wiimote) then press the corresponding button
 * Raw Backup Mode:  GC_pad L+Y , Wiimote B+Minus
 * Raw Restore Mode: GC_pad L+X , Wiimote B+Plus
 * Format Card Mode: GC_pad L+Z , Wiimote B+2
@@ -249,6 +266,7 @@ Currently gcmm uses:
 * dronesplitter for banner and icon implementation
 * PlabloACZ and Picachu025 for updating the source.
 * Nano(Excelsiior), for inspiring me to finally working again on GCMM
+* bm123456 and themanuel for beta testing and support
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                                                               ·oø×O0|

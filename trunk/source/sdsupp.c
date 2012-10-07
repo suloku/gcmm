@@ -380,7 +380,7 @@ int SDLoadMCImageHeader(char *sdfilename)
 	u16 l2 =(u16)(FileBuffer[0x38] << 8) | FileBuffer[0x39];
 	if (length !=  l2)
 	{
-		sprintf(msg, "l1 = %x l2 = %x", length,l2);
+		sprintf(msg, "File length does not equal file size. Wrong extension? (l1 = %x l2 = %x)", length,l2);
 		WaitPrompt (msg);//"File Length does not equal filesize");
 		return 0;
 	}

@@ -299,7 +299,12 @@ void SD_BackupMode ()
 	char buffer[256], text[64];
 
 	clearRightPane();
-	DrawText(380,130,"B a c k u p   M o d e");
+	DrawText(386,130,"B a c k u p   M o d e");
+	DrawText(386,134,"_____________________");
+	writeStatusBar("Reading memory card... ", "");
+	/*** Get the directory listing from the memory card ***/
+	memitems = CardGetDirectory (MEM_CARD);
+	
 	writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup to SD Card ") ;
 	setfontsize (14);
 #ifdef HW_RVL
@@ -307,9 +312,6 @@ void SD_BackupMode ()
 #else
 	DrawText(40, 60, "Press R to backup ALL savegames");
 #endif
-
-	/*** Get the directory listing from the memory card ***/
-	memitems = CardGetDirectory (MEM_CARD);
 
 	/*** If it's a blank card, get out of here ***/
 	if (!memitems)
@@ -409,7 +411,8 @@ void SD_BackupModeAllFiles ()
 	char buffer[128];
 
 	clearRightPane();
-	DrawText(380,130," B a c k u p   A l l ");
+	DrawText(386,130," B a c k u p   A l l ");
+	DrawText(386,134,"_____________________");
 	writeStatusBar("Backing up all files.", "This may take a while.");
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (MEM_CARD);
@@ -458,7 +461,12 @@ void SD_RestoreMode ()
 
 	clearRightPane();
 	DrawText(380,130,"R e s t o r e  M o d e");
+	DrawText(380,134,"______________________");
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
+	writeStatusBar("Reading files... ", "");
+
+	files = SDGetFileList (1);
+
 	setfontsize (14);
 #ifdef HW_RVL
 	DrawText(40, 60, "Press R/1 to restore ALL savegames");
@@ -466,8 +474,6 @@ void SD_RestoreMode ()
 	DrawText(40, 60, "Press R to restore ALL savegames");
 #endif
 
-
-	files = SDGetFileList (1);
 	if (!files)
 	{
 		WaitPrompt ("No saved games in SD Card to restore !");
@@ -557,7 +563,11 @@ void SD_RawBackupMode ()
 	s32 writen = 0;
 	char msg[64];
 	clearRightPane();
-	DrawText(40, 230, "R A W   B a c k u p   M o d e");
+
+	DrawText(394,224,"___________________");	
+	DrawText(394,248,"R A W   B a c k u p");
+	DrawText(454,268,"M o d e");
+	DrawText(394,272,"___________________");	
 	writeStatusBar("Reading memory card... ", "");
 
 	if (BackupRawImage(MEM_CARD, &writen) == 1)
@@ -587,9 +597,14 @@ void SD_RawRestoreMode ()
 	clearRightPane();
 	DrawText(380,130,"R A W   R e s t o r e");
 	DrawText(450,150,"M o d e");
+	DrawText(380,154,"_____________________");
+
+	writeStatusBar("Reading files... ", "");
+	
+	files = SDGetFileList (0);
+	
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ");
 
-	files = SDGetFileList (0);
 	if (!files)
 	{
 		WaitPrompt ("No raw backups in SD Card to restore !");
@@ -640,10 +655,11 @@ int main ()
 
 	Initialise ();	/*** Start video ***/
 	FT_Init ();		/*** Start FreeType ***/
-
+	ClearScreen();
+	ShowScreen();
 #ifdef HW_RVL
 	initialise_power();
-	have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT 32 USB device?", "USB", "SD"));
+	have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT32 USB device?", "USB", "SD"));
 #else
 	//Returns 1 (memory card in slot B, sd gecko in slot A) if A button was pressed and 0 if B button was pressed
 	MEM_CARD = WaitPromptChoice ("Please select the slot where SD Gecko is inserted", "SLOT B", "SLOT A");
@@ -711,7 +727,6 @@ int main ()
 		case 700 : //Raw backup mode
 			if (have_sd)
 			{
-				DrawText(40, 230, "R A W   B a c k u p   M o d e");
 				SD_RawBackupMode();
 			}else
 			{
@@ -741,9 +756,11 @@ int main ()
 			VIDEO_WaitVSync ();
 			if (CARD_Probe(MEM_CARD) > 0)
 			{
-				DrawText(70, 230, "F o r m a t   C a r d");
-				DrawText(150, 250, "M o d e");
 				clearRightPane();
+				DrawText(390,224,"____________________");
+				DrawText(390,248,"F o r m a t  C a r d");
+				DrawText(460,268,"M o d e");
+				DrawText(390,272,"____________________");				
 				MC_FormatMode(MEM_CARD);
 
 			}else if (MEM_CARD)
