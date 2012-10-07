@@ -117,8 +117,53 @@ int MountCard(int cslot)
 		return isMounted;
 	}
 	/*** If this point is reached, something went wrong ***/
-
+	CARD_Unmount(cslot);
 	return ret;
+}
+
+u16 FreeBlocks(s32 chn)
+{
+	s32 err;
+	static u8 noinserted = 0;
+	u16 freeblocks = 0;
+	/*** Try to mount the card ***/
+	err = MountCard(chn);
+	if (err < 0)
+	{
+		//We want to allow browsing saves in sd even with no card
+		if (err == CARD_ERROR_NOCARD)
+		{
+			noinserted = 1;
+			if(chn) ShowAction("No card inserted in slot B!");
+			else ShowAction("No card inserted in slot A!");
+			return 0;
+		}else
+		{
+			WaitCardError("CardMount", err);
+			return 0;			/*** Unable to mount the card ***/
+		}
+	}else{
+		err = CARD_GetFreeBlocks(chn, &freeblocks);
+		if (err < 0)
+		{
+			CARD_Unmount(chn);
+            //We want to allow browsing saves in sd even with no card
+            if (err == CARD_ERROR_NOCARD)
+            {
+				noinserted = 1;
+                if(chn) ShowAction("No card inserted in slot B!");
+                else ShowAction("No card inserted in slot A!");
+                return 0;
+            }else
+            {
+				WaitCardError("FreeBlocks", err);
+				return 0;
+            }
+		}
+	}
+	if (noinserted) ShowAction("");
+	CARD_Unmount(chn);
+	return freeblocks;
 }
 
 /****************************************************************************
@@ -541,6 +586,7 @@ int CardWriteFile (int slot)
 	int offset;
 	int written;
 	int filelen;
+	char txt[128];
 
 	company[2] = gamecode[4] = 0;
 
@@ -572,9 +618,11 @@ int CardWriteFile (int slot)
 		if (((u32)CardDir.gamecode == (u32)gamecode) && (strcmp ((char *) CardDir.filename, (char *)filename) == 0))
 		{
 			/*** Found the file - prompt user ***/
-			ret = WaitPromptChoice("File already exists. Overwrite?", "Overwrite", "Cancel");
+			sprintf(txt, "File %s already exists. Overwrite?", (char *)filename);
+			ret = WaitPromptChoice(txt, "Overwrite", "Cancel");
 			if (!ret){
-				ret = WaitPromptChoiceAZ("Are you -SURE- you want to overwrite?", "Overwrite", "Cancel");
+				sprintf(txt, "Are you -SURE- you want to overwrite %s?", (char *)filename);
+				ret = WaitPromptChoiceAZ(txt, "Overwrite", "Cancel");
 				if(!ret){
 					err = CARD_Delete(slot, (char *) &filename);
 					if (err < 0)
@@ -609,9 +657,11 @@ tryagain:
 		if (err == CARD_ERROR_EXIST)
 		{
 			/*** Found the file - prompt user ***/
-			ret = WaitPromptChoice("File already exists. Overwrite?", "Overwrite", "Cancel");
+			sprintf(txt, "File %s already exists. Overwrite?", (char *) filename);
+			ret = WaitPromptChoice(txt, "Overwrite", "Cancel");
 			if (!ret){
-				ret = WaitPromptChoiceAZ("Are you -SURE- you want to overwrite?", "Overwrite", "Cancel");
+				sprintf(txt, "Are you -SURE- you want to overwrite %s?", (char *) filename);
+				ret = WaitPromptChoiceAZ(txt, "Overwrite", "Cancel");
 				if(!ret){
 					err = CARD_Delete(slot, (char *) &filename);
 					if (err < 0)

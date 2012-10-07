@@ -17,7 +17,7 @@
 
 //Uncomment this definiton to use time lapse for icon duration instead of retrace count
 //Time code is mantained as an alternative example of animating the icons
-#define USE_TIME
+//#define USE_TIME
 
 #ifdef HW_RVL
 void initialise_power() ;
@@ -45,7 +45,7 @@ void DrawHLine (int x1, int x2, int y, int color);
 void DrawVLine (int x, int y1, int y2, int color);
 void DrawBox (int x1, int y1, int x2, int y2, int color);
 void DrawBoxFilled (int x1, int y1, int x2, int y2, int color);
-void DrawBoxFilledGradient (int x1, int y1, int x2, int y2, u32 color1, u32 color2);
+void DrawBoxFilledGradient (int x1, int y1, int x2, int y2, u32 color1, u32 color2, float location);
 
 
 #endif

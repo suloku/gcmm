@@ -35,24 +35,37 @@ u32 Decode5A3(u16 val, int row) {
 	//the following code relies in DrawBoxFilledGradient() being called
 	//in showSaveInfo() in freetype.c to have these colors and being 37 pixel height (y2-y1 = 37)
 	//also, icon and banner must be displayed over it
-	//Blue color 5 10 140
-	//Purple color 55 15 95
+	//To do: get the actual color in the screen to make true alpha blending
 	int r3,g3,b3;
 	int r1 = (BLUECOL&0x0000FF) >> 0;	int g1 = (BLUECOL&0x00FF00) >> 8;	int b1 = (BLUECOL&0xFF0000) >> 16;
 	int r2 = (PURPLECOL&0x0000FF) >> 0;	int g2 = (PURPLECOL&0x00FF00) >> 8;	int b2 = (PURPLECOL&0xFF0000) >> 16;
-	
+
+	int midr, midg, midb;
+	midr = (r1 * 0.5) + (r2 * (1 - 0.5));
+	midg = (g1 * 0.5) + (g2 * (1 - 0.5));
+	midb = (b1 * 0.5) + (b2 * (1 - 0.5));	
 	float p;
+	float boxheight = 37.0; //DrawBoxFilledGradient() y2-y1
 	int temp = 0;
 	//correct icon displacement over the gradient box
 	temp = row +3;
-	
-	p = (float)((float)(37-temp)/(float)37.0);
-	r3 = (r1 * p) + (r2 * (1 - p));
-	g3 = (g1 * p) + (g2 * (1 - p));
-	b3 = (b1 * p) + (b2 * (1 - p));
-	
-	bg_color = (b3<<16)|(g3<<8)|r3;
+	if (boxheight-temp > boxheight*LOCATION)
+	{	
+		p = ((float)(boxheight-temp)-(boxheight*LOCATION))/((float)(boxheight)-((boxheight)*LOCATION));
+		r3 = (r1 * p) + (midr * (1 - p));
+		g3 = (g1 * p) + (midg * (1 - p));
+		b3 = (b1 * p) + (midb * (1 - p));
+	}
+	else
+	{
+		p = ((float)(boxheight-temp))/((float)(boxheight)*LOCATION);
+		r3 = (midr * p) + (r2 * (1 - p));
+		g3 = (midg * p) + (g2 * (1 - p));
+		b3 = (midb * p) + (b2 * (1 - p));		
+	}
 
+	bg_color = (b3<<16)|(g3<<8)|r3;
+	
 	int r, g, b, a;
 	//use 0x8000 as a bit mask
 	if ((val & 0x8000)) {
@@ -94,14 +107,18 @@ void bannerloadRGB(u16 *gamebanner) {
 					RGBA = Decode5A3(src[ix], row);
 					dst[ (y + iy) * CARD_BANNER_W + (x + ix)] = RGBA;
 				}
-			}
-			//keep track of pixel rows
-			count+=4;
-			if (count == CARD_BANNER_W/4)
-			{
+				//keep track of pixel rows
 				row++;
-				count = 0;
-			}	
+				count++;
+				if (count == 4*4*3*2)
+				{
+					count = 0;
+				}
+				else if (!(row%4))
+				{
+					row -=4;
+				}
+			}
 		}
 		
 	}
@@ -144,13 +161,17 @@ void bannerloadCI(u8 *gamebanner, u16* lookupdata) {
 					temp = src[ix];
 					dst[(y + iy) * CARD_BANNER_W + (x + ix)] = Decode5A3(lookupdata[temp], row);
 				}
-			}
-			count+=8;
-			if (count == CARD_BANNER_W/4)
-			{
 				row++;
-				count = 0;
-			}	
+				count++;
+				if (count == 4*4*3)
+				{
+					count = 0;
+				}
+				else if (!(row%4))
+				{
+					row -=4;
+				}
+			}
 		}
 		
 	}
@@ -191,13 +212,17 @@ void iconloadRGB(u16 *gameicon) {
 					//Decode for straight RGB
 					dst[(y + iy) * CARD_ICON_W + (x + ix)] = Decode5A3(src[ix], row);				
 				}				
-			}
-			count++;
-			if (count % 2 == 0)
-			{
 				row++;
-				count = 0;
-			}	
+				count++;
+				if (count == 4*4*2)
+				{
+					count = 0;
+				}
+				else if (!(row%4))
+				{
+					row -=4;
+				}
+			}
 		}
 	}
 	
@@ -239,14 +264,21 @@ void iconloadCI(u8 *gameicon, u16* lookupdata) {
 					temp = src[ix];
 					dst[(y + iy) * CARD_ICON_W + (x + ix)] = Decode5A3(lookupdata[temp], row);
 				}
-			}
-			count+=CARD_BANNER_W/16;
-			if (count % 2 == 0)
-			{
 				row++;
-				count = 0;
-			}				
+				count++;
+				if (count == 4*4)
+				{
+					count = 0;
+				}
+				else if (!(row%4))
+				{
+					row -=4;
+				}
+			}
+			
+			//count++;
 		}
+
 	}
 	
 	//Build the final array; 3 pixel values = 3*3072 or 9216 size bmp info
