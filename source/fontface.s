@@ -8,5 +8,5 @@ fontface:
 
 
 .globl fontsize
-fontsize:	.long 42604
+fontsize:	.long 50824
 

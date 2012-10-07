@@ -810,7 +810,7 @@ void showCardInfo(int sel){
 
 void showSaveInfo(int sel)
 {
-	int y = 160, x = 378, j;
+	int y = 165, x = 378, j;
 	char gamecode[5], company[3], txt[1024];
 
 	//clear right pane, but just the save info
@@ -846,17 +846,17 @@ void showSaveInfo(int sel)
 	//Draw nice gradient background for banner and icon
 	if(SDCARD_GetBannerFmt(gci.banner_fmt) == 1 || SDCARD_GetBannerFmt(gci.banner_fmt) == 2){
 	    //Box for icon+banner
-		DrawHLine (410, 410+160, 162, getcolour (255,255,255));
-		DrawBox (410, 163, 410+160, 163+39, getcolour (255,255,255));
-		DrawHLine (410, 410+160, 164+39, getcolour (255,255,255));
-		DrawBoxFilledGradient(412, 164, (410+158), (164+37), BLUECOL, PURPLECOL, LOCATION);
+		DrawHLine (410, 410+160, 172, getcolour (255,255,255));
+		DrawBox (410, 173, 410+160, 173+39, getcolour (255,255,255));
+		DrawHLine (410, 410+160, 174+39, getcolour (255,255,255));
+		DrawBoxFilledGradient(412, 174, (410+158), (174+37), BLUECOL, PURPLECOL, LOCATION);
 	}else
 	{
 	    //Box for icon
-		DrawHLine (468, 468+42, 162, getcolour (255,255,255));
-		DrawBox (468, 163, 468+42, 163+39, getcolour (255,255,255));
-		DrawHLine (468, 468+42, 164+39, getcolour (255,255,255));
-		DrawBoxFilledGradient(468+2, 164, (468+40), (164+37), BLUECOL, PURPLECOL, LOCATION);
+		DrawHLine (468, 468+42, 172, getcolour (255,255,255));
+		DrawBox (468, 173, 468+42, 173+39, getcolour (255,255,255));
+		DrawHLine (468, 468+42, 174+39, getcolour (255,255,255));
+		DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), BLUECOL, PURPLECOL, LOCATION);
 	}
 
 	//Show banner if there is one
@@ -870,7 +870,7 @@ void showSaveInfo(int sel)
 	/*** Display relevant info for this save ***/
 	sprintf(txt, "#%d %s/%s", sel, gamecode, company);
 	DrawText(x, y-4, txt);
-	y += 65;
+	y += 70;
 
 	//DrawText(x, y, "File Description:");
 	//y += 20;
@@ -975,7 +975,7 @@ void showSaveInfo(int sel)
 	DrawText(x, y, txt);
 
 #ifdef DEBUG_VALUES
-	/*** Uncomment to print some debug info ***/
+	/*** Print some debug info ***/
 	y+=20;
 	sprintf(comment2, "%x %x %x %d", gci.icon_addr, gci.icon_fmt, gci.banner_fmt, numicons);
 	DrawText(x, y, comment2);
@@ -1410,7 +1410,7 @@ int ShowSelector (int saveinfo)
 void writeStatusBar( char *line1, char *line2)
 {
 	int bgcolor = getcolour(0xff,0xff,0xff);
-	DrawBoxFilled(10, 404, 640, 455, bgcolor);
+	DrawBoxFilled(0, 404, vmode->fbWidth-1, vmode->xfbHeight-1, bgcolor);
 	//setfontcolour(84,174,211);
 	setfontcolour(28,28,28);
 	DrawText(40, 425, line1);
