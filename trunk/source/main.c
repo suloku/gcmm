@@ -73,25 +73,22 @@ static int initFAT(int device)
 		if (!__io_wiisd.isInserted())
 		{
 			ShowAction ("No SD card inserted! Trying USB storage.");
-			sleep(1);
+			sleep(2);
 				__io_usbstorage.startup();
 			if (!__io_usbstorage.isInserted())
 			{
-				ShowAction ("No USB device inserted either!");
-				sleep(1);
+				WaitPrompt ("No USB device inserted either!");
 				return 0;
 			}
 			else if (!fatMountSimple ("fat", &__io_usbstorage)){
-				ShowAction("Error Mounting USB fat!");
-				sleep(1);
+				WaitPrompt("Error Mounting USB fat!");
 				return 0;
 			}
 			return 1;//usb mounted
 		}
 		if (!fatMountSimple ("fat", &__io_wiisd))
 		{
-			ShowAction("Error Mounting SD fat!");
-			sleep(1);
+			WaitPrompt("Error Mounting SD fat!");
 			return 0;
 		}
 	}else if (!device)//try USB first
@@ -100,57 +97,64 @@ static int initFAT(int device)
 		if (!__io_usbstorage.isInserted())
 		{
 			ShowAction ("No usb device inserted! Trying internal SD.");
-			sleep(1);
+			sleep(2);
 				__io_wiisd.startup();
 			if (!__io_wiisd.isInserted())
 			{
-				ShowAction ("No SD card inserted either!");
-				sleep(1);
+				WaitPrompt ("No SD card inserted either!");
 				return 0;
 			}
 			else if (!fatMountSimple ("fat", &__io_wiisd)){
-				ShowAction("Error Mounting SD fat!");
-				sleep(1);
+				WaitPrompt("Error Mounting SD fat!");
 				return 0;
 			}
 			return 1;//SD mounted
 		}
 		if (!fatMountSimple ("fat", &__io_usbstorage))
 		{
-			ShowAction("Error Mounting USB fat!");
-			sleep(1);
+			WaitPrompt("Error Mounting USB fat!");
 			return 0;
 		}
 	}
 #else
+	int i =0;
+	s32 ret;
 	if (device)
 	{//Memcard in SLOT B, SD gecko in SLOT A
+		//This will ensure SD gecko is recognized if inserted or changed to another slot after GCMM is executed
+		for(i=0;i<10;i++){
+			ret = CARD_Probe(CARD_SLOTA);
+			if (ret == CARD_ERROR_WRONGDEVICE)
+				break;
+		}
 		__io_gcsda.startup();
 		if (!__io_gcsda.isInserted())
 		{
-			ShowAction ("No SD Gecko inserted! Insert it in slot A please");
-			sleep(1);
+			WaitPrompt ("No SD Gecko inserted! Insert it in slot A and restart");
 			return 0;
 		}
 		if (!fatMountSimple ("fat", &__io_gcsda))
 		{
-			ShowAction("Error Mounting SD fat!");
-			sleep(1);
+			WaitPrompt("Error Mounting SD fat!");
 			return 0;
 		}
 	}else //Memcard in SLOT A, SD gecko in SLOT B
 	{
+		//This will ensure SD gecko is recognized if inserted or changed to another slot after GCMM is executed
+		for(i=0;i<10;i++){
+			ret = CARD_Probe(CARD_SLOTB);
+			if (ret == CARD_ERROR_WRONGDEVICE)
+				break;
+		}	
 		__io_gcsdb.startup();
 		if (!__io_gcsdb.isInserted())
 		{
-			ShowAction ("No SD Gecko inserted! Insert it in slot B please");
-			sleep(1);
+			WaitPrompt ("No SD Gecko inserted! Insert it in slot B and restart");
 			return 0;
 		}
 		if (!fatMountSimple ("fat", &__io_gcsdb))
 		{
-			ShowAction("Error Mounting SD fat!");
-			sleep(1);
+			WaitPrompt("Error Mounting SD fat!");
 			return 0;
 		}
 	}
@@ -304,9 +308,9 @@ void SD_BackupMode ()
 	writeStatusBar("Reading memory card... ", "");
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (MEM_CARD);
-	
-	writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup to SD Card ") ;
+
 	setfontsize (14);
+	writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup savegame") ;
 #ifdef HW_RVL
 	DrawText(40, 60, "Press R/1 to backup ALL savegames");
 #else
@@ -338,7 +342,7 @@ void SD_BackupMode ()
 					bytestodo = CardReadFile(MEM_CARD, selected);
 					if (bytestodo)
 					{
-						sprintf(buffer, "[%d/%d] Saving to SD card", selected+1, memitems);
+						sprintf(buffer, "[%d/%d] Saving to FAT device", selected+1, memitems);
 						ShowAction(buffer);
 						if (!SDSaveMCImage())
 						{
@@ -373,7 +377,7 @@ void SD_BackupMode ()
 			bytestodo = CardReadFile (MEM_CARD, selected);
 			if (bytestodo)
 			{
-				ShowAction ("Saving to SD CARD");
+				ShowAction ("Saving to FAT device");
 				if (SDSaveMCImage())
 				{
 					WaitPrompt ("Backup complete");
@@ -413,6 +417,8 @@ void SD_BackupModeAllFiles ()
 	clearRightPane();
 	DrawText(386,130," B a c k u p   A l l ");
 	DrawText(386,134,"_____________________");
+
+	setfontsize (14);
 	writeStatusBar("Backing up all files.", "This may take a while.");
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (MEM_CARD);
@@ -431,7 +437,7 @@ void SD_BackupModeAllFiles ()
 			bytestodo = CardReadFile(MEM_CARD, selected);
 			if (bytestodo)
 			{
-				sprintf(buffer, "[%d/%d] Saving to SD card", selected+1, memitems);
+				sprintf(buffer, "[%d/%d] Saving to FAT device", selected+1, memitems);
 				ShowAction(buffer);
 				SDSaveMCImage();
 			}
@@ -462,12 +468,12 @@ void SD_RestoreMode ()
 	clearRightPane();
 	DrawText(380,130,"R e s t o r e  M o d e");
 	DrawText(380,134,"______________________");
-	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
 	writeStatusBar("Reading files... ", "");
 
 	files = SDGetFileList (1);
 
 	setfontsize (14);
+	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
 #ifdef HW_RVL
 	DrawText(40, 60, "Press R/1 to restore ALL savegames");
 #else
@@ -476,7 +482,7 @@ void SD_RestoreMode ()
 
 	if (!files)
 	{
-		WaitPrompt ("No saved games in SD Card to restore !");
+		WaitPrompt ("No saved games in FAT device to restore !");
 	}
     else
 	{
@@ -495,7 +501,7 @@ void SD_RestoreMode ()
                 //Restore All files
                 for ( selected = 0; selected < files; selected++ ) {
                     /*** Restore files ***/
-                    sprintf(buffer, "[%d/%d] Reading from SD card", selected+1, files);
+                    sprintf(buffer, "[%d/%d] Reading from FAT device", selected+1, files);
                     ShowAction(buffer);
                     if (SDLoadMCImage ((char*)filelist[selected]))
                     {
@@ -527,7 +533,7 @@ void SD_RestoreMode ()
         }
 		else
 		{
-			ShowAction ("Reading from SD Card");
+			ShowAction ("Reading from FAT device");
 			if (SDLoadMCImage ((char*)filelist[selected]))
 			{
 				ShowAction ("Updating Memory Card");
@@ -567,12 +573,14 @@ void SD_RawBackupMode ()
 	DrawText(394,224,"___________________");	
 	DrawText(394,248,"R A W   B a c k u p");
 	DrawText(454,268,"M o d e");
-	DrawText(394,272,"___________________");	
+	DrawText(394,272,"___________________");
+	
+	setfontsize (14);	
 	writeStatusBar("Reading memory card... ", "");
 
 	if (BackupRawImage(MEM_CARD, &writen) == 1)
 	{
-		sprintf(msg, "Backup complete! Wrote %d bytes to SD",writen);
+		sprintf(msg, "Backup complete! Wrote %d bytes to FAT device",writen);
 		WaitPrompt(msg);
 	}else{
 
@@ -602,12 +610,13 @@ void SD_RawRestoreMode ()
 	writeStatusBar("Reading files... ", "");
 	
 	files = SDGetFileList (0);
-	
+
+	setfontsize (14);
 	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ");
 
 	if (!files)
 	{
-		WaitPrompt ("No raw backups in SD Card to restore !");
+		WaitPrompt ("No raw backups in FAT device to restore !");
 	}else
 	{
 		selected = ShowSelector (0);
@@ -626,7 +635,7 @@ void SD_RawRestoreMode ()
 					return;
 				}
 			}
-			ShowAction ("Reading from SD Card...");
+			ShowAction ("Reading from FAT device...");
 			if (RestoreRawImage(MEM_CARD, (char*)filelist[selected], &writen) == 1)
 			{
 				sprintf(msg, "Restore complete! Wrote %d bytes to card",writen);
@@ -700,11 +709,11 @@ int main ()
 			break;
 		case 300 : //User wants to backup
 			if (have_sd) SD_BackupMode();
-			else WaitPrompt("Reboot aplication with an SD card");
+			else WaitPrompt("Reboot aplication with a FAT device");
 			break;
 		case 400 : //User wants to restore
 			if (have_sd) SD_RestoreMode();
-			else WaitPrompt("Reboot aplication with an SD card");
+			else WaitPrompt("Reboot aplication with a FAT device");
 			break;
 		case 500 ://exit
 			ShowAction ("Exiting...");
@@ -730,7 +739,7 @@ int main ()
 				SD_RawBackupMode();
 			}else
 			{
-				WaitPrompt("Reboot aplication with an SD card");
+				WaitPrompt("Reboot aplication with a FAT device");
 			}
 			break;
 		case 800 : //Raw restore mode
@@ -740,7 +749,7 @@ int main ()
 			if (CARD_Probe(MEM_CARD) > 0)
 			{
 				if (have_sd) SD_RawRestoreMode();
-				else WaitPrompt("Reboot aplication with an SD card");
+				else WaitPrompt("Reboot aplication with a FAT device");
 
 			}else if (MEM_CARD)
 			{
