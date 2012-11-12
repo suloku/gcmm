@@ -757,7 +757,7 @@ void showCardInfo(int sel){
 	y += 20;
 
 	sprintf(txt, "%02X", imageserial[0]);
-	for (i=1; i<11; i++){
+	for (i=1; i<12; i++){
 		sprintf(temp, "%02X", imageserial[i]);
 		strcat(txt, temp);
 	}
@@ -792,7 +792,7 @@ void showCardInfo(int sel){
 	y+=20;
 
 	sprintf(txt, "%02X", sramex->flash_id[MEM_CARD][0]);
-	for (i=1; i<sizeof(sramex->flash_id[MEM_CARD])-1; i++){
+	for (i=1; i<sizeof(sramex->flash_id[MEM_CARD]); i++){
 		sprintf(temp, "%02X", sramex->flash_id[MEM_CARD][i]);
 		strcat(txt, temp);
 	}

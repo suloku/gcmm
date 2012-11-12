@@ -51,6 +51,7 @@ u8 filelist[1024][1024];
 int maxfile;
 extern int cancel;
 extern bool offsetchanged;
+extern int mode;
 
 /*** Card lib ***/
 card_dir CardList[CARD_MAXFILES];	/*** Directory listing ***/
@@ -161,7 +162,15 @@ u16 FreeBlocks(s32 chn)
             }
 		}
 	}
-	if (noinserted) ShowAction("");
+	if (noinserted)
+	{
+		if (mode == 300)//Backup mode
+			writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup savegame");
+		else if (mode == 400)//Restore mode
+			writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ");
+		else
+			writeStatusBar("","");
+	}
 	CARD_Unmount(chn);
 	return freeblocks;
 }
@@ -803,7 +812,8 @@ void MC_DeleteMode(int slot)
 	writeStatusBar("Reading memory card... ", "");
 	/*** Get the directory listing from the memory card ***/
 	memitems = CardGetDirectory (slot);
-	
+
+	setfontsize (14);
 	writeStatusBar("Choose a file with UP button or DOWN button ", "Press A button to delete ") ;
 
 	/*** If it's a blank card, get out of here ***/

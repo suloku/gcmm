@@ -2,8 +2,8 @@
 <app version="1">
 	<name>GCMM</name>
 	<coder>Suloku</coder>
-	<version>1.4</version>
-	<release_date>20121008000000</release_date>
+	<version>1.4a</version>
+	<release_date>20121015000000</release_date>
 	<short_description>Memory Card Manager</short_description> 
 	<long_description>A memory card manager for Wii/GC.
 
