@@ -103,6 +103,9 @@ int MountCard(int cslot)
 		EXI subsystem, just to make sure we have no problems mounting the card ***/
 		EXI_ProbeReset();
 		CARD_Init (NULL, NULL);
+		//Ensure we start in show all files mode
+		CARD_SetCompany(NULL);
+		CARD_SetGamecode(NULL);		
 
 		/*** Mount the card ***/
 		ret = CARD_Mount (cslot, SysArea, card_removed);
@@ -245,6 +248,7 @@ int CardGetDirectory (int slot)
 	char company[4];
 	char gamecode[6];
 
+	//add null char
 	company[2] = gamecode[4] = 0;
 
 	/*** Clear the work area ***/
@@ -260,6 +264,10 @@ int CardGetDirectory (int slot)
 		WaitCardError("CardMount", err);
 		return 0;			/*** Unable to mount the card ***/
 	}
+
+	//Ensure we are in show all mode
+	CARD_SetCompany(NULL);
+	CARD_SetGamecode(NULL);
 
 	/*** Retrieve the directory listing ***/
 	cardcount = 0;
@@ -292,8 +300,8 @@ void CardListFiles ()
 	char company[4];
 	char gamecode[6];
 
-	company[2] = 0;
-	gamecode[4] = 0;
+	//add null char
+	company[2] = gamecode[4] = 0;
 
 	for (i = 0; i < cardcount; i++)
 	{
@@ -330,14 +338,11 @@ int CardReadFileHeader (int slot, int id)
 	memset (FileBuffer, 0, MAXFILEBUFFER);
 	memset (CommentBuffer, 0, 64);
 	memset (SysArea, 0, CARD_WORKAREA);
-	company[2] = 0;
-	gamecode[4] = 0;
+	//add null char
+	company[2] = gamecode[4] = 0;
 
 	memcpy (company, &CardList[id].company, 2);
 	memcpy (gamecode, &CardList[id].gamecode, 4);
-
-	/*** Initialise for this company ***/
-	CARD_Init (gamecode, company);
 
 	/*** Mount the card ***/
 	err = MountCard(slot);
@@ -349,6 +354,10 @@ int CardReadFileHeader (int slot, int id)
 
 	/*** Retrieve sector size ***/
 	CARD_GetSectorSize (slot, &SectorSize);
+
+	/*** Initialise for this company & gamecode ***/
+	CARD_SetCompany((const char*)company);
+	CARD_SetGamecode((const char*)gamecode);
 
 	/*** Open the file ***/
 	err = CARD_Open (slot, (char *) &CardList[id].filename, &CardFile);
@@ -518,14 +527,11 @@ int CardReadFile (int slot, int id)
 	/*** Clear the work buffers ***/
 	memset (FileBuffer, 0, MAXFILEBUFFER);
 	memset (SysArea, 0, CARD_WORKAREA);
-	company[2] = 0;
-	gamecode[4] = 0;
+	//add null char
+	company[2] = gamecode[4] = 0;
 
 	memcpy (company, &CardList[id].company, 2);
 	memcpy (gamecode, &CardList[id].gamecode, 4);
-
-	/*** Initialise for this company ***/
-	CARD_Init (gamecode, company);
 
 	/*** Mount the card ***/
 	err = MountCard(slot);
@@ -537,6 +543,10 @@ int CardReadFile (int slot, int id)
 
 	/*** Retrieve sector size ***/
 	CARD_GetSectorSize (slot, &SectorSize);
+
+	/*** Initialise for this company & gamecode ***/
+	CARD_SetCompany(company);
+	CARD_SetGamecode(gamecode);
 
 	/*** Open the file ***/
 	err = CARD_Open (slot, (char *) &CardList[id].filename, &CardFile);
@@ -597,6 +607,7 @@ int CardWriteFile (int slot)
 	int filelen;
 	char txt[128];
 
+	//add null char
 	company[2] = gamecode[4] = 0;
 
 	memset (SysArea, 0, CARD_WORKAREA);
@@ -606,9 +617,6 @@ int CardWriteFile (int slot)
 	memcpy(gamecode, &gci.gamecode, 4);
 	memcpy(filename, &gci.filename, CARD_FILENAMELEN);
 	filelen = gci.filesize8 * 8192;
-
-	/*** Init system ***/
-	CARD_Init(gamecode, company);
 
 	/*** Mount the card ***/
 	err = MountCard(slot);
@@ -620,14 +628,18 @@ int CardWriteFile (int slot)
 
 	CARD_GetSectorSize (slot, &SectorSize);
 
+	/*** Initialise for this company & gamecode ***/
+	CARD_SetCompany(company);
+	CARD_SetGamecode(gamecode);
+	
 	/*** If this file exists, abort ***/
 	err = CARD_FindFirst (slot, &CardDir, false);
 	while (err != CARD_ERROR_NOFILE)
 	{
-		if (((u32)CardDir.gamecode == (u32)gamecode) && (strcmp ((char *) CardDir.filename, (char *)filename) == 0))
+		if ((memcmp(CardDir.gamecode, &gamecode, 4) == 0) && (memcmp(CardDir.company, &company, 2) == 0) && (strcmp ((char *) CardDir.filename, (char *)filename) == 0))
 		{
 			/*** Found the file - prompt user ***/
-			sprintf(txt, "File %s already exists. Overwrite?", (char *)filename);
+			sprintf(txt, "Savegame %s(%s%s) already exists. Overwrite?", (char *)filename, gamecode, company);
 			ret = WaitPromptChoice(txt, "Overwrite", "Cancel");
 			if (!ret){
 				sprintf(txt, "Are you -SURE- you want to overwrite %s?", (char *)filename);
@@ -654,11 +666,12 @@ int CardWriteFile (int slot)
 		err = CARD_FindNext (&CardDir);
 	}
 
-	//This is needed for propper restoring
+tryagain:
+	/*** Initialise for this company & gamecode ***/
+	//Again just in case, as this is very important for propper restoring
 	CARD_SetCompany(company);
 	CARD_SetGamecode(gamecode);
-
-tryagain:
+	
 	/*** Now restore the file from backup ***/
 	err = CARD_Create (slot, (char *) filename, filelen, &CardFile);
 	if (err < 0)
@@ -666,7 +679,7 @@ tryagain:
 		if (err == CARD_ERROR_EXIST)
 		{
 			/*** Found the file - prompt user ***/
-			sprintf(txt, "File %s already exists. Overwrite?", (char *) filename);
+			sprintf(txt, "File %s(%s%s) already exists. Overwrite?", (char *) filename, gamecode, company);
 			ret = WaitPromptChoice(txt, "Overwrite", "Cancel");
 			if (!ret){
 				sprintf(txt, "Are you -SURE- you want to overwrite %s?", (char *) filename);
@@ -676,8 +689,6 @@ tryagain:
 					if (err < 0)
 					{
 						WaitCardError("MCDel", err);
-						CARD_SetCompany(NULL);
-						CARD_SetGamecode(NULL);
 						CARD_Unmount (slot);
 						return 0;
 					}
@@ -685,9 +696,6 @@ tryagain:
 				}
 			}
 		}
-		//Return To show all so we don't have errors
-		CARD_SetCompany(NULL);
-		CARD_SetGamecode(NULL);
 		CARD_Unmount (slot);
 		WaitCardError("CardCreate", err);
 		return 0;
@@ -723,10 +731,6 @@ tryagain:
 #else
 	__card_setstatusex(slot, CardFile.filenum, &gci);
 #endif
-
-	//Return To show all so we don't have errors
-	CARD_SetCompany(NULL);
-	CARD_SetGamecode(NULL);
 
 	CARD_Close (&CardFile);
 	CARD_Unmount (slot);
@@ -843,9 +847,7 @@ void MC_DeleteMode(int slot)
 				sprintf(msg, "Deleting \"%s\"", CardList[selected].filename);
 				writeStatusBar(msg,"");
 				//WaitPrompt(msg);
-
-				CARD_Init((const char*)CardList[selected].gamecode, (const char*)CardList[selected].company);
-
+				
 				/*** Try to mount the card ***/
 				err = MountCard(slot);
 				if (err < 0)
@@ -853,6 +855,10 @@ void MC_DeleteMode(int slot)
 					WaitCardError("MCDel Mount", err);
 					return; /*** Unable to mount the card ***/
 				}
+
+				/*** Initialise for this company & gamecode ***/
+				CARD_SetCompany(CardList[selected].company);
+				CARD_SetGamecode(CardList[selected].gamecode);
 
 				err = CARD_Delete(slot, (char *) &CardList[selected].filename);
 				if (err < 0)
