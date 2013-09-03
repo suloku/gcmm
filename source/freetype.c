@@ -34,6 +34,7 @@ FT_Library ftlibrary;
 FT_Face face;
 FT_GlyphSlot slot;
 FT_UInt glyph_index;
+extern const char appversion[];
 extern card_stat CardStatus;
 extern int cancel;
 extern int doall;
@@ -350,6 +351,9 @@ int SelectMode ()
 // setfontcolour(28,28,28);
 
 // DrawText(495,305,"choose your mode");
+	setfontsize(10);
+	DrawText(600,87,appversion);
+	setfontsize (FONT_SIZE);
 	writeStatusBar("Choose your mode","");
 	ShowScreen();
 	/*** Clear any pending buttons - button 'debounce' ***/

@@ -35,6 +35,10 @@
 #include "bitmap.h"
 
 #define PSOSDLOADID 0x7c6000a6
+//Comment FLASHIDCHECK to allow writing any image to any mc. This will corrupt official cards.
+#define FLASHIDCHECK
+
+const char appversion[] = "v1.4b";
 int mode;
 int cancel;
 int doall;
@@ -628,6 +632,7 @@ void SD_RawRestoreMode ()
 		}
 		else
 		{
+		#ifdef FLASHIDCHECK
 			//Now imageserial and sramex.flash_id[MEM_CARD] variables should hold the proper information
 			for (i=0;i<12;i++){
 				if (imageserial[i] != sramex->flash_id[MEM_CARD][i]){
@@ -635,6 +640,7 @@ void SD_RawRestoreMode ()
 					return;
 				}
 			}
+		#endif
 			ShowAction ("Reading from FAT device...");
 			if (RestoreRawImage(MEM_CARD, (char*)filelist[selected], &writen) == 1)
 			{
@@ -696,7 +702,6 @@ int main ()
 			}
 		}
 #endif
-
 		/*** Mode == 100 for backup, 200 for restore ***/
 		switch (mode)
 		{
