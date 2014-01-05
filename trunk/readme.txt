@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                    GCMM 1.4b by suloku                        ·oø×O0|
+|0O×øo·                    GCMM 1.4c by suloku                        ·oø×O0|
 |                   http://code.google.com/p/gcmm                           |
 |                          (Under GPL License)                              |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
@@ -29,10 +29,13 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+[What's New 1.4c - january 05, 2014 - By suloku]
+* Disabled __sector_erase() check when raw restoring as some unofficial cards seem to have problems with it.
+
 [What's New 1.4b - september 03, 2013 - By suloku]
 * Card initialization was wrong all the way, wich lead to savegames of the same game of different region or those that shared similar filenames (Twilight Princess and WindWaker) to not work properly. Thanks to antidote.crk for noticing. (read considerations sections for more info)
 * Added version display
-
 
 [What's New 1.4a - october 18, 2012 - By suloku]
 * Fixed SD Gecko when inserted/swapped at slot selection screen in GameCube mode.
