@@ -376,7 +376,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 		return -1;
 	}
 	EraseCheckBuffer = (u8*)memalign(32,SectorSize);
-	if(CheckBuffer == NULL)
+	if(EraseCheckBuffer == NULL)
 	{
 		mem_free(CardBuffer);
 		mem_free(CheckBuffer);
@@ -486,6 +486,13 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 							usleep(1*1000); //sleep untill the erase is done which sadly takes alot longer then read
 						__card_sync(slot);
 #ifdef DEBUGRAW
+//Check if the sector was erased (all set to 0).
+
+//Some unofficial memory cards apparently don't erase sectors when using __card_sectorerase(),
+//instead they can directly properly store the data calling just __card_write(),
+//so the following check will always fail, preventing restore for those cards, so I'm disabling
+//it and relying only on the __card_read() check done after writing the data.
+/*
 						memset(CheckBuffer,0,write_len);
 						DCInvalidateRange(CheckBuffer,write_len);
 						read_data = 0;
@@ -529,7 +536,8 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 							CARD_Unmount(slot);
 							return -1;
 						}
-#endif						
+*/
+#endif
 					}else
 					{
 						fclose(dumpFd);
@@ -539,7 +547,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 						mem_free(EraseCheckBuffer);
 #endif						
 						//printf("\nerror writing data(%d) Memory card could be corrupt now!!!\n",err);
-						sprintf(msg, "error erasing sector(%d) Memory card could be corrupt now!!!",err);
+						sprintf(msg, "error erasing sector(%d). Memory card could be corrupt now!!!",err);
 						WaitPrompt (msg);
 						CARD_Unmount(slot);
 						return -1;
@@ -554,6 +562,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 					__card_sync(slot);
 
 #ifdef DEBUGRAW
+//Check the written data against the buffer
 					memset(CheckBuffer,0,write_len);
 					DCInvalidateRange(CheckBuffer,write_len);
 					read_data = 0;
