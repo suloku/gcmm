@@ -837,8 +837,8 @@ void MC_DeleteMode(int slot)
 				return;
 			}
 
-			//0 = B wass pressed -> delete the file
-			erase = WaitPromptChoice("Are you sure you want to delete the file?", "Delete", "Cancel");
+			//0 = Z or 2 was pressed -> delete the file
+			erase = WaitPromptChoiceAZ("Are you sure you want to delete the file?", "Delete", "Cancel");
 			if (!erase)
 			{
 				// selected = 1;

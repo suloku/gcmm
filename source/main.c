@@ -38,7 +38,7 @@
 //Comment FLASHIDCHECK to allow writing any image to any mc. This will corrupt official cards.
 #define FLASHIDCHECK
 
-const char appversion[] = "v1.4c";
+const char appversion[] = "v1.4d";
 int mode;
 int cancel;
 int doall;

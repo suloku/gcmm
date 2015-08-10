@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                    GCMM 1.4c by suloku                        ·oø×O0|
+|0O×øo·                    GCMM 1.4d by suloku                        ·oø×O0|
 |                   http://code.google.com/p/gcmm                           |
 |                          (Under GPL License)                              |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
@@ -29,6 +29,12 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+[What's New 1.4d - august 08, 2015 - By suloku]
+* Fixed bug in card.c that prevented writing to the last block of the memory card, preventing restoring a savegame that would fill the memory card (thanks to undergroundmonorail)
+* Fixed bug in card.c that prevented correct block freeing when deleting a file and only was fixed by using the memory card on official software (the wii/gamecube save manager or probably also games)
+* Added libogc fix for a bug in card.c (the bug didn't affect GCMM, it was fixed in 1.4b, but I didn't change card.c)
+* Changed button presses for single savegame delete to prevent unvoluntary savegame deleting
 
 [What's New 1.4c - january 05, 2014 - By suloku]
 * Disabled __sector_erase() check when raw restoring as some unofficial cards seem to have problems with it.
