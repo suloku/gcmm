@@ -1,6 +1,7 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                    GCMM 1.4d by suloku                        ·oø×O0|
-|                   http://code.google.com/p/gcmm                           |
+|0O×øo·                    GCMM 1.4e by suloku                        ·oø×O0|
+|                      https://github.com/suloku/gcmm                       |
+|                   (old site: http://code.google.com/p/gcmm)               |
 |                          (Under GPL License)                              |
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
@@ -29,6 +30,9 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+
+[What's New 1.4e - february 27, 2016 - By suloku]
+* Fixed bug in card.c that prevented correct backup/write of saves with same filename but different case. Bug affected Timesplitters 2, probably Timesplitters 3 too. Thanks to DakuTree for reporting and Antidote for fixing.
 
 [What's New 1.4d - august 08, 2015 - By suloku]
 * Fixed bug in card.c that prevented writing to the last block of the memory card, preventing restoring a savegame that would fill the memory card (thanks to undergroundmonorail)
