@@ -38,7 +38,7 @@
 //Comment FLASHIDCHECK to allow writing any image to any mc. This will corrupt official cards.
 #define FLASHIDCHECK
 
-const char appversion[] = "v1.4e";
+const char appversion[] = "v1.4f";
 int mode;
 int cancel;
 int doall;
@@ -53,6 +53,8 @@ u32 retraceCount;
 
 extern u8 filelist[1024][1024];
 extern bool offsetchanged;
+extern u8 currFolder[260];
+extern int folderCount;
 
 s32 MEM_CARD = CARD_SLOTB;
 extern syssramex *sramex;
@@ -468,16 +470,19 @@ void SD_RestoreMode ()
 	int files;
 	int selected;
 	char buffer[256], text[64];
+	int inProgress = 1;
 
 	clearRightPane();
 	DrawText(380,130,"R e s t o r e  M o d e");
 	DrawText(380,134,"______________________");
 	writeStatusBar("Reading files... ", "");
+	
+	//Dragonbane: Curr Folder to default
+	
+	sprintf((char*)currFolder, "MCBACKUP");
 
 	files = SDGetFileList (1);
 
-	setfontsize (14);
-	writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
 #ifdef HW_RVL
 	DrawText(40, 60, "Press R/1 to restore ALL savegames");
 #else
@@ -490,75 +495,131 @@ void SD_RestoreMode ()
 	}
     else
 	{
-		selected = ShowSelector (1);
-
-		if (cancel)
+		while(inProgress == 1)
 		{
-			WaitPrompt ("Restore action cancelled !");
-			return;
-		}
-        else if (doall)
-        {
-            doall = WaitPromptChoice("Are you sure you want to restore -ALL- files?", "Yes", "No");
-            if (!doall)
-            {
-                //Restore All files
-                for ( selected = 0; selected < files; selected++ ) {
-                    /*** Restore files ***/
-                    sprintf(buffer, "[%d/%d] Reading from FAT device", selected+1, files);
-                    ShowAction(buffer);
-                    if (SDLoadMCImage ((char*)filelist[selected]))
-                    {
-                        sprintf(buffer, "[%d/%d] Saving to MC slot %s", selected+1, files, (MEM_CARD) ? "B" : "A");
-                        ShowAction(buffer);
-                        if (!CardWriteFile (MEM_CARD))
-                        {
-                            strncpy(text, (char*)filelist[selected], 32);
-                            text[32]='\0';
-                            sprintf(buffer, "Error during restore (%s). Continue?", text);
-                            doall = WaitPromptChoice(buffer, "Yes", "No");
-                            if (doall)
-                            {
-                                WaitPrompt ("Restore action cancelled due to error!");
-                                return;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        WaitPrompt ("Error reading image");
-                        return;
-                    }
-                }
+			setfontsize (14);
+			writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
+			
+			//It will wait here until user selected a file
+			selected = ShowSelector (1);
 
-                WaitPrompt("Full card restore done!");
-                return;
-            }
-        }
-		else
-		{
-			ShowAction ("Reading from FAT device");
-			if (SDLoadMCImage ((char*)filelist[selected]))
+			if (cancel)
 			{
-				ShowAction ("Updating Memory Card");
-				if (CardWriteFile (MEM_CARD))
+				if (strcmp((char*)currFolder, "MCBACKUP") == 0)
 				{
-					WaitPrompt ("Restore Complete");
+					WaitPrompt ("Restore action cancelled !");
 					return;
 				}
 				else
 				{
-					WaitPrompt ("Error during restore");
+					//Go back one folder			
+					char* pos = strrchr( (char*)currFolder, '/' );
+
+					currFolder[(pos-(char*)currFolder)] = 0; 
+
+					files = SDGetFileList (1);
+					
+					cancel = 0;
+					offsetchanged = true;
+					usleep(300000);
+					continue;
+				}
+			}
+			else if (doall)
+			{
+				doall = WaitPromptChoice("Are you sure you want to restore -ALL- files from this folder?", "Yes", "No");
+				if (!doall)
+				{
+					//Restore All files (from current folder)	
+					for ( selected = folderCount; selected < files; selected++ ) {
+						/*** Restore files ***/
+						sprintf(buffer, "[%d/%d] Reading from FAT device", selected+1, files);
+						ShowAction(buffer);
+						if (SDLoadMCImage ((char*)filelist[selected]))
+						{
+							sprintf(buffer, "[%d/%d] Saving to MC slot %s", selected+1, files, (MEM_CARD) ? "B" : "A");
+							ShowAction(buffer);
+							if (!CardWriteFile (MEM_CARD))
+							{
+								strncpy(text, (char*)filelist[selected], 32);
+								text[32]='\0';
+								sprintf(buffer, "Error during restore (%s). Continue?", text);
+								doall = WaitPromptChoice(buffer, "Yes", "No");
+								if (doall)
+								{
+									WaitPrompt ("Restore action cancelled due to error!");
+									return;
+								}
+							}
+						}
+						else
+						{
+							WaitPrompt ("Error reading image");
+							return;
+						}
+					}
+
+					WaitPrompt("Full card restore done!");
+					return;
+				}
+				else
+				{
 					return;
 				}
 			}
 			else
 			{
-				WaitPrompt ("Error reading image");
-				return;
+				//Check if selection is folder
+				char folder[1024];
+				sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selected]);
+		
+				if(isdir_sd(folder) == 1)
+				{
+					//Enter folder
+					sprintf((char*)currFolder, "%s/%s", currFolder, (char*)filelist[selected]);
+
+					files = SDGetFileList (1);
+					if (!files)
+					{
+						WaitPrompt("Folder is empty!");
+						
+						//Go back again			
+						char* pos = strrchr( (char*)currFolder, '/' );
+
+						currFolder[(pos-(char*)currFolder)] = 0; 
+
+						files = SDGetFileList (1);
+					}
+					
+					offsetchanged = true;
+					usleep(300000);
+					continue;
+				}
+				else
+				{
+					ShowAction ("Reading from FAT device");
+					if (SDLoadMCImage ((char*)filelist[selected]))
+					{
+						ShowAction ("Updating Memory Card");
+						if (CardWriteFile (MEM_CARD))
+						{
+							WaitPrompt ("Restore Complete");
+							return;
+						}
+						else
+						{
+							WaitPrompt ("Error during restore");
+							return;
+						}
+					}
+					else
+					{
+						WaitPrompt ("Error reading image");
+						return;
+					}
+				}
 			}
 		}
-
 	}
     return;
 }
