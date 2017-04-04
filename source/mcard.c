@@ -48,6 +48,8 @@ int lasticon;
 /*** This matrix will serve as our array of filenames for each file on the card
      We add 10 to filenamelen since we add on game company info***/
 u8 filelist[1024][1024];
+u8 currFolder[260];
+int folderCount;
 int maxfile;
 extern int cancel;
 extern bool offsetchanged;

@@ -81,6 +81,9 @@ extern GCI gci;
 extern u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
 extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 
+extern u8 currFolder[260];
+extern int folderCount;
+
 #define PAGESIZE 16
 
 
@@ -816,6 +819,7 @@ void showSaveInfo(int sel)
 {
 	int y = 165, x = 378, j;
 	char gamecode[5], company[3], txt[1024];
+	int isFolder = 0;
 
 	//clear right pane, but just the save info
 	int bgcolor = getcolour(84,174,211);
@@ -829,12 +833,23 @@ void showSaveInfo(int sel)
 	// TODO: only read the necessary header + comment, display banner and icon files
 	if (mode == RESTORE_MODE)
 	{
-		j = SDLoadMCImageHeader((char*)filelist[sel]);
-		// struct gci now contains header info
-		memcpy(company, gci.company, 2);
-		memcpy(gamecode, gci.gamecode, 4);
-		company[2] = gamecode[4] = 0;
-
+		//Dragonbane: Show basic info if folder
+		
+		char folder[1024];
+		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[sel]);
+	
+		if(isdir_sd(folder) == 1)
+		{
+			isFolder = 1;
+		}
+		else
+		{
+			j = SDLoadMCImageHeader((char*)filelist[sel]);
+			// struct gci now contains header info
+			memcpy(company, gci.company, 2);
+			memcpy(gamecode, gci.gamecode, 4);
+			company[2] = gamecode[4] = 0;
+		}
 	}
 	else if( (mode == BACKUP_MODE) | (mode == DELETE_MODE) )
 	{
@@ -848,7 +863,7 @@ void showSaveInfo(int sel)
 	}
 
 	//Draw nice gradient background for banner and icon
-	if(SDCARD_GetBannerFmt(gci.banner_fmt) == 1 || SDCARD_GetBannerFmt(gci.banner_fmt) == 2){
+	if((isFolder == 0 && SDCARD_GetBannerFmt(gci.banner_fmt) == 1) || (isFolder == 0 && SDCARD_GetBannerFmt(gci.banner_fmt) == 2)){
 	    //Box for icon+banner
 		DrawHLine (410, 410+160, 172, getcolour (255,255,255));
 		DrawBox (410, 173, 410+160, 173+39, getcolour (255,255,255));
@@ -860,9 +875,33 @@ void showSaveInfo(int sel)
 		DrawHLine (468, 468+42, 172, getcolour (255,255,255));
 		DrawBox (468, 173, 468+42, 173+39, getcolour (255,255,255));
 		DrawHLine (468, 468+42, 174+39, getcolour (255,255,255));
-		DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), BLUECOL, PURPLECOL, LOCATION);
+		
+		if (isFolder == 1)
+		{
+			DrawBoxFilled(468+2, 174, (468+40), (174+37), getcolour(255,255,0));
+			//DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), getcolour(255,255,0), getcolour(255,255,0), LOCATION);
+		}
+		else
+		{
+			DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), BLUECOL, PURPLECOL, LOCATION);
+		}
 	}
 
+	/*** Display relevant info for this save ***/
+	
+	if (isFolder == 1)
+		sprintf(txt, "#%d Folder: %s", sel, (char*)filelist[sel]);
+	else
+		sprintf(txt, "#%d %s/%s", sel, gamecode, company);
+		
+	DrawText(x, y-4, txt);
+	y += 70;
+	
+	
+	if (isFolder == 1)
+		return;
+		
+		
 	//Show banner if there is one
 	if (SDCARD_GetBannerFmt(gci.banner_fmt) == CARD_BANNER_RGB) {
 		bannerloadRGB(bannerdata);
@@ -870,11 +909,7 @@ void showSaveInfo(int sel)
 	else if (SDCARD_GetBannerFmt(gci.banner_fmt) == CARD_BANNER_CI) {
 		bannerloadCI(bannerdataCI, tlutbanner);
 	}
-
-	/*** Display relevant info for this save ***/
-	sprintf(txt, "#%d %s/%s", sel, gamecode, company);
-	DrawText(x, y-4, txt);
-	y += 70;
+	
 
 	//DrawText(x, y, "File Description:");
 	//y += 20;
@@ -996,6 +1031,13 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 	int w;
 	//int textlen = 22;
 	int textlen = 32;
+	
+	
+	//Dragonbane
+	char name[1024];
+	char folder[1024];
+	
+	
 	//If the filelist offset changed, we have to redraw every entry
 	//This tracks switching "pages" of files in the list
 	if (offsetchanged) {
@@ -1014,7 +1056,21 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); ++i){
 			//changed this to limit characters shown in filename since display gets weird
 			//if we let the entire filename appear
-			strncpy (text, (char*)filelist[i], textlen);
+			
+			sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[i]);
+	
+			
+			if(isdir_sd(folder) == 1)
+			{
+				sprintf(name, "[Folder]%s", (char*)filelist[i]);
+			}
+			else
+			{
+				sprintf(name, "%s", (char*)filelist[i]);
+			}
+			
+			
+			strncpy (text, name, textlen);
 			text[textlen] = 0;
 			if (j == (selection - offset)){
 				/*** Highlighted text entry ***/
@@ -1051,8 +1107,20 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		ypos = (screenheight - (PAGESIZE * 20+40)) >> 1;
 		ypos += 26;
 		setfontcolour (0xff, 0xff, 0xff);
+		
 		//user just pressed up, down, left or right, upordown holds the correction needded
-		strncpy (text, (char*)filelist[selection+upordown], textlen);
+		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection+upordown]);
+	
+		if(isdir_sd(folder) == 1)
+		{
+			sprintf(name, "[Folder]%s", (char*)filelist[selection+upordown]);
+		}
+		else
+		{
+			sprintf(name, "%s", (char*)filelist[selection+upordown]);
+		}
+		
+		strncpy (text, name, textlen);
 		text[textlen] = 0;
 		for (w = 0; w < 20; w++){
 			DrawLineFast (35, 330, (((selection-offset)+upordown) * 20) + (ypos - 14) + w, 84, 174,211);
@@ -1062,7 +1130,21 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		//appear faster - without it the highlight box glides too much
 		ShowScreen();
 		setfontcolour (28, 28, 28);
-		strncpy (text, (char*)filelist[selection], textlen);
+		
+		
+		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection]);
+	
+		if(isdir_sd(folder) == 1)
+		{
+			sprintf(name, "[Folder]%s", (char*)filelist[selection]);
+		}
+		else
+		{
+			sprintf(name, "%s", (char*)filelist[selection]);
+		}
+		
+		
+		strncpy (text, name, textlen);
 		text[textlen] = 0;
 		//the current spot is always highlighted
 		for (w = 0; w < 20; w++){
@@ -1237,6 +1319,12 @@ int ShowSelector (int saveinfo)
             }
             currframe = i;
 #endif
+
+			char folder[1024];
+			sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection]);
+	
+			if(isdir_sd(folder) == 0)
+			{
                 //If there's a real icon show it, if not just wait until next icon frame
                 if ( SDCARD_GetIconFmt(gci.icon_fmt,iconindex[currframe])== 1) {
                     //CI with shared palette
@@ -1248,6 +1336,8 @@ int ShowSelector (int saveinfo)
                 else if ( SDCARD_GetIconFmt(gci.icon_fmt,iconindex[currframe])== 2) {
                     iconloadRGB(icondataRGB[iconindex[currframe]]);
                 }
+			}
+
                 ShowScreen();
 
                 currframe ++;

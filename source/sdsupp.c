@@ -47,6 +47,9 @@ extern u32 maxfile;
 extern GCI gci;
 extern int OFFSET;
 
+extern u8 currFolder[260];
+extern int folderCount;
+
 bool file_exists(const char * filename)
 {
 	FILE * file = fopen(filename, "r");
@@ -175,7 +178,7 @@ int SDLoadMCImage(char *sdfilename)
 
 	/*** Make fullpath filename ***/
 	//sprintf (filename, "dev0:\\%s\\%s", MCSAVES, sdfilename);
-	sprintf (filename, "fat:/%s/%s", MCSAVES, sdfilename);
+	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
 
 	//SDCARD_Init ();
 
@@ -264,7 +267,7 @@ int SDLoadMCImageHeader(char *sdfilename)
 	memset (CommentBuffer, 0, 64);
 
 	/*** Make fullpath filename ***/
-	sprintf (filename, "fat:/%s/%s", MCSAVES, sdfilename);
+	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
 
 
 	/*** Open the SD Card file ***/
@@ -510,7 +513,7 @@ int SDLoadCardImageHeader(char *sdfilename)
 	memset (&cardheader, 0, sizeof(Header));
 
 	/*** Make fullpath filename ***/
-	sprintf (filename, "fat:/%s/%s", MCSAVES, sdfilename);
+	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
 
 	/*** Open the SD Card file ***/
 	handle = fopen ( filename , "rb" );
@@ -610,9 +613,37 @@ int SDGetFileList(int mode)
 	int dirtype;
 	//static struct stat filestat;
 
-	char filename[1024];
-	sprintf (filename, "fat:/%s/", MCSAVES);
+	int dirCount = 0;
 
+	char filename[1024];
+	sprintf (filename, "fat:/%s/", currFolder);
+
+
+	//Add Folders
+	if ((dir = opendir(filename)) == NULL)
+	{
+		return -1;
+	}
+	
+	while ((dit = readdir(dir)) != NULL)
+	{
+		if(strncmp(dit->d_name, ".", 1) != 0 && strncmp(dit->d_name, "..", 2) != 0)
+		{
+			sprintf(namefile, "%s%s", filename, dit->d_name);
+			
+			if(isdir_sd(namefile) == 1)
+			{
+				strcpy((char *)filelist[filecount], dit->d_name);
+				dirCount++;
+				filecount++;
+			}
+		}
+	}
+
+	closedir(dir);
+
+
+	//Add Files
 	if ((dir = opendir(filename)) == NULL)
 	{
 		return -1;
@@ -622,16 +653,10 @@ int SDGetFileList(int mode)
 	{
 		if(strncmp(dit->d_name, ".", 1) != 0 && strncmp(dit->d_name, "..", 2) != 0)
 		{
-			if (mode){
-				if (compare_extension(dit->d_name, ".gci") || compare_extension(dit->d_name, ".sav") || compare_extension(dit->d_name, ".gcs")){
-					strcpy((char *)filelist[filecount], dit->d_name);
-					sprintf(namefile, "%s%s", filename, dit->d_name);
-					dirtype = ((isdir_sd(namefile) == 1) ? DIRENT_T_DIR : DIRENT_T_FILE);
-
-					filecount++;
-				}
-			}else if (!mode){
-				if (compare_extension(dit->d_name, ".raw") || compare_extension(dit->d_name, ".gcp") || compare_extension(dit->d_name, ".mci")){
+			if (mode)
+			{
+				if (compare_extension(dit->d_name, ".gci") || compare_extension(dit->d_name, ".sav") || compare_extension(dit->d_name, ".gcs"))
+				{
 					strcpy((char *)filelist[filecount], dit->d_name);
 					sprintf(namefile, "%s%s", filename, dit->d_name);
 					dirtype = ((isdir_sd(namefile) == 1) ? DIRENT_T_DIR : DIRENT_T_FILE);
@@ -639,8 +664,54 @@ int SDGetFileList(int mode)
 					filecount++;
 				}
 			}
+			else if (!mode)
+			{
+				if (compare_extension(dit->d_name, ".raw") || compare_extension(dit->d_name, ".gcp") || compare_extension(dit->d_name, ".mci"))
+				{
+					strcpy((char *)filelist[filecount], dit->d_name);
+					sprintf(namefile, "%s%s", filename, dit->d_name);
+					dirtype = ((isdir_sd(namefile) == 1) ? DIRENT_T_DIR : DIRENT_T_FILE);
+
+					filecount++;
+				}
+			}
+
 		}
 	}
+	
+	
+	//Dragonbane: Sort folders alphabetically
+	int i=0;
+	int j=0;
+	
+	for (i = 0; i < dirCount; i++) 
+	{
+      for (j = i+1; j < dirCount; j++)
+         if (strcmp((char*)filelist[i], (char*)filelist[j]) > 0) 
+		 {
+            char temp[1024];
+			
+			sprintf(temp, "%s", (char*)filelist[i]);
+			sprintf((char*)filelist[i], "%s", (char*)filelist[j]);
+			sprintf((char*)filelist[j], "%s", temp);
+         }
+    }
+	
+	
+	//Dragonbane: Sort files alphabetically
+	
+    for (i = dirCount; i < filecount; i++) 
+	{
+      for (j = i+1; j < filecount; j++)
+         if (strcmp((char*)filelist[i], (char*)filelist[j]) > 0) 
+		 {
+            char temp[1024];
+			
+			sprintf(temp, "%s", (char*)filelist[i]);
+			sprintf((char*)filelist[i], "%s", (char*)filelist[j]);
+			sprintf((char*)filelist[j], "%s", temp);
+         }
+    }
 
 	/* while(1)
 	{
@@ -658,6 +729,7 @@ int SDGetFileList(int mode)
 
 	closedir(dir); // cierra el directorio
 	maxfile = filecount;
+	folderCount = dirCount;
 	return filecount;
 
 	/*  int entries = 0;
