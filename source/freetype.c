@@ -745,40 +745,50 @@ void showCardInfo(int sel){
 	int i;
 	char temp[5];
 
-	//START card image info START
-	//put block 1 in cardheader
-	SDLoadCardImageHeader((char*)filelist[sel]);
-
-	//get the true serial
-	u64 serial1[4];
-    for (i=0;i<4;i++){
-        memcpy(&serial1[i], (u8*)&cardheader+(8*i), sizeof(u64));
-    }
-    u64 serialA = serial1[0]^serial1[1]^serial1[2]^serial1[3];
-
-	//get the flash ID
-	getserial(imageserial);
-
-	sprintf(txt, "Card image flash ID");
-	DrawText(x, y, txt);
-	y += 20;
-
-	sprintf(txt, "%02X", imageserial[0]);
-	for (i=1; i<12; i++){
-		sprintf(temp, "%02X", imageserial[i]);
-		strcat(txt, temp);
+	char folder[1024];
+	sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[sel]);
+	
+	if(isdir_sd(folder) == 1)
+	{
+		y += 100;
 	}
-	DrawText(x,y,txt);
-	y+=20;
+	else
+	{
+		//START card image info START
+		//put block 1 in cardheader
+		SDLoadCardImageHeader((char*)filelist[sel]);
 
-	sprintf(txt, "Serial N.: %016llX", serialA);
-	DrawText(x,y,txt);
-	y+=20;
+		//get the true serial
+		u64 serial1[4];
+    		for (i=0;i<4;i++){
+        		memcpy(&serial1[i], (u8*)&cardheader+(8*i), sizeof(u64));
+    		}
+    		u64 serialA = serial1[0]^serial1[1]^serial1[2]^serial1[3];
 
-	sprintf(txt, "Size: %d blocks", (cardheader.SizeMb[1]*16)-5);
-	DrawText(x, y, txt);
-	y+=40;
-	//END card image info END
+		//get the flash ID
+		getserial(imageserial);
+
+		sprintf(txt, "Card image flash ID");
+		DrawText(x, y, txt);
+		y += 20;
+
+		sprintf(txt, "%02X", imageserial[0]);
+		for (i=1; i<12; i++){
+			sprintf(temp, "%02X", imageserial[i]);
+			strcat(txt, temp);
+		}
+		DrawText(x,y,txt);
+		y+=20;
+
+		sprintf(txt, "Serial N.: %016llX", serialA);
+		DrawText(x,y,txt);
+		y+=20;
+
+		sprintf(txt, "Size: %d blocks", (cardheader.SizeMb[1]*16)-5);
+		DrawText(x, y, txt);
+		y+=40;
+		//END card image info END
+	}
 
 	//START real card info START
 
