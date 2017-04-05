@@ -595,7 +595,7 @@ void SD_RestoreMode ()
 					usleep(300000);
 					continue;
 				}
-				else
+				else //Selection is a file
 				{
 					ShowAction ("Reading from FAT device");
 					if (SDLoadMCImage ((char*)filelist[selected]))
@@ -666,6 +666,7 @@ void SD_RawRestoreMode ()
 	char msg[64];
 	s32 writen = 0;
 	int i;
+	int inProgress = 1;
 
 	clearRightPane();
 	DrawText(380,130,"R A W   R e s t o r e");
@@ -673,6 +674,9 @@ void SD_RawRestoreMode ()
 	DrawText(380,154,"_____________________");
 
 	writeStatusBar("Reading files... ", "");
+	
+	//Curr Folder to default
+	sprintf((char*)currFolder, "MCBACKUP");
 	
 	files = SDGetFileList (0);
 
@@ -684,35 +688,89 @@ void SD_RawRestoreMode ()
 		WaitPrompt ("No raw backups in FAT device to restore !");
 	}else
 	{
-		selected = ShowSelector (0);
+		while(inProgress == 1)
+		{
+			setfontsize (14);
+			writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
+			
+			//It will wait here until user selected a file
+			selected = ShowSelector (0);
 
-		if (cancel)
-		{
-			WaitPrompt ("Restore action cancelled !");
-			return;
-		}
-		else
-		{
-		#ifdef FLASHIDCHECK
-			//Now imageserial and sramex.flash_id[MEM_CARD] variables should hold the proper information
-			for (i=0;i<12;i++){
-				if (imageserial[i] != sramex->flash_id[MEM_CARD][i]){
-					WaitPrompt ("Card and image flash ID don't match !");
+			if (cancel)
+			{
+				if (strcmp((char*)currFolder, "MCBACKUP") == 0)
+				{
+					WaitPrompt ("Restore action cancelled !");
 					return;
 				}
+				else
+				{
+					//Go back one folder			
+					char* pos = strrchr( (char*)currFolder, '/' );
+
+					currFolder[(pos-(char*)currFolder)] = 0; 
+
+					files = SDGetFileList (0);
+					
+					cancel = 0;
+					offsetchanged = true;
+					usleep(300000);
+					continue;
+				}
 			}
-		#endif
-			ShowAction ("Reading from FAT device...");
-			if (RestoreRawImage(MEM_CARD, (char*)filelist[selected], &writen) == 1)
+			else
 			{
-				sprintf(msg, "Restore complete! Wrote %d bytes to card",writen);
-				WaitPrompt(msg);
-			}else
-			{
-				WaitPrompt("Restore failed!");
+				//Check if selection is folder
+				char folder[1024];
+				sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selected]);
+		
+				if(isdir_sd(folder) == 1)
+				{
+					//Enter folder
+					sprintf((char*)currFolder, "%s/%s", currFolder, (char*)filelist[selected]);
+
+					files = SDGetFileList (0);
+					if (!files)
+					{
+						WaitPrompt("Folder is empty!");
+						
+						//Go back again			
+						char* pos = strrchr( (char*)currFolder, '/' );
+
+						currFolder[(pos-(char*)currFolder)] = 0; 
+
+						files = SDGetFileList (0);
+					}
+					
+					offsetchanged = true;
+					usleep(300000);
+					continue;
+				}
+				else //Selection is a file
+				{
+#ifdef FLASHIDCHECK
+					//Now imageserial and sramex.flash_id[MEM_CARD] variables should hold the proper information
+					for (i=0;i<12;i++){
+						if (imageserial[i] != sramex->flash_id[MEM_CARD][i]){
+							WaitPrompt ("Card and image flash ID don't match !");
+							return;
+						}
+					}
+#endif
+					ShowAction ("Reading from FAT device...");
+					if (RestoreRawImage(MEM_CARD, (char*)filelist[selected], &writen) == 1)
+					{
+						sprintf(msg, "Restore complete! Wrote %d bytes to card",writen);
+						WaitPrompt(msg);
+					}else
+					{
+						WaitPrompt("Restore failed!");
+					}
+				}
 			}
 		}
 	}
+	return;
 }
 
 /****************************************************************************

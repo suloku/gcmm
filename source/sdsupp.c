@@ -609,7 +609,7 @@ int SDGetFileList(int mode)
 	int filecount = 0;
 	DIR *dir;
 	struct dirent *dit;
-	static char namefile[256*4]; // reserva espacio suficiente para UTF-8
+	static char namefile[256*4]; // enough room for UTF-8 encoding
 	int dirtype;
 	//static struct stat filestat;
 

@@ -30,6 +30,9 @@ s8 write_data = 0;
 s8 erase_data = 0;
 Header cardheader;
 
+extern u8 currFolder[260];
+extern int folderCount;
+
 extern syssram* __SYS_LockSram();
 extern syssramex* __SYS_LockSramEx();
 extern u32 __SYS_UnlockSram(u32 write);
@@ -389,7 +392,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 
 
 	/*** Make fullpath filename ***/
-	sprintf (filename, "fat:/%s/%s", MCSAVES, sdfilename);
+	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
 
 	/*** Open the SD Card file ***/
 	dumpFd = fopen ( filename , "rb" );
