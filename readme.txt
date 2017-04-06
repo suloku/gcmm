@@ -32,7 +32,7 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 `иХиииии ииииииииииииииии иииииииииииииии ииииииииииииииииииии иииииииииииии'
 
 [What's New 1.4f - april 05, 2017 - By suloku]
-* dragonbane0 made a mod of version 1.4c with folder selection and alphabetical sorting. Zephiles pointed this out and the changes have been merged. Thanks you both!
+* dragonbane0 made a mod of version 1.4c with folder selection and alphabetical sorting. Zephiles pointed this out and the changes have been merged with some little extra tweaks. Thanks you both!
 
 [What's New 1.4e - february 27, 2016 - By suloku]
 * Fixed bug in card.c that prevented correct backup/write of saves with same filename but different case. Bug affected Timesplitters 2, probably Timesplitters 3 too. Thanks to DakuTree for reporting and Antidote for fixing.

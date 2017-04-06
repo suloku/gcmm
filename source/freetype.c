@@ -83,6 +83,7 @@ extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 
 extern u8 currFolder[260];
 extern int folderCount;
+extern int displaypath;
 
 #define PAGESIZE 16
 
@@ -750,7 +751,16 @@ void showCardInfo(int sel){
 	
 	if(isdir_sd(folder) == 1)
 	{
-		y += 100;
+		sprintf(txt, "#%d Folder: %s", sel, (char*)filelist[sel]);
+		DrawText(x, y-4, txt);
+		y += 70;
+		
+		//Simple folder "icon"
+		DrawBoxFilled(468+2, 174+20, (468+40), (174+37)+20, getcolour(0,0,0));
+		DrawBoxFilled(468+2+2, 174+2+20, (468+40)-2, (174+37)-2+20, getcolour(255,255,0));
+		DrawBoxFilled(468+2, 174+20, (468+40), (174+10)+20, getcolour(0,0,0));
+		DrawBoxFilled(468+2+2, 174+2+20, (468+40-22)-2, (174+10-1)-2+20, getcolour(255,255,0));
+		DrawBoxFilled((468+40-22)+2, 174+20, (468+40), (174+10-1)-2+20, getcolour(84,174,211));
 	}
 	else
 	{
@@ -788,41 +798,41 @@ void showCardInfo(int sel){
 		DrawText(x, y, txt);
 		y+=40;
 		//END card image info END
+
+		//START real card info START
+
+		//In this call we mount the card, so we can later read the SRAM unscrambled flash ID
+		u64 cardserialno = Card_SerialNo(MEM_CARD);
+
+		sramex = __SYS_LockSramEx();
+		__SYS_UnlockSramEx(0);
+
+		if (!MEM_CARD)
+		{
+			sprintf(txt, "Slot A card flash ID:");
+		}else
+		{
+			sprintf(txt, "Slot B card flash ID:");
+		}
+		DrawText(x,y,txt);
+		y+=20;
+
+		sprintf(txt, "%02X", sramex->flash_id[MEM_CARD][0]);
+		for (i=1; i<sizeof(sramex->flash_id[MEM_CARD]); i++){
+			sprintf(temp, "%02X", sramex->flash_id[MEM_CARD][i]);
+			strcat(txt, temp);
+		}
+		DrawText(x,y,txt);
+		y+=20;
+
+		sprintf(txt, "Serial N.: %016llX", cardserialno);
+		DrawText(x,y,txt);
+		y+=20;
+
+		sprintf(txt, "Size: %d blocks", (memsize*16)-5);
+		DrawText(x,y,txt);
+		//END real card info END
 	}
-
-	//START real card info START
-
-	//In this call we mount the card, so we can later read the SRAM unscrambled flash ID
-	u64 cardserialno = Card_SerialNo(MEM_CARD);
-
-	sramex = __SYS_LockSramEx();
-	__SYS_UnlockSramEx(0);
-
-	if (!MEM_CARD)
-	{
-		sprintf(txt, "Slot A card flash ID:");
-	}else
-	{
-		sprintf(txt, "Slot B card flash ID:");
-	}
-	DrawText(x,y,txt);
-	y+=20;
-
-	sprintf(txt, "%02X", sramex->flash_id[MEM_CARD][0]);
-	for (i=1; i<sizeof(sramex->flash_id[MEM_CARD]); i++){
-		sprintf(temp, "%02X", sramex->flash_id[MEM_CARD][i]);
-		strcat(txt, temp);
-	}
-	DrawText(x,y,txt);
-	y+=20;
-
-	sprintf(txt, "Serial N.: %016llX", cardserialno);
-	DrawText(x,y,txt);
-	y+=20;
-
-	sprintf(txt, "Size: %d blocks", (memsize*16)-5);
-	DrawText(x,y,txt);
-	//END real card info END
 }
 
 void showSaveInfo(int sel)
@@ -881,18 +891,24 @@ void showSaveInfo(int sel)
 		DrawBoxFilledGradient(412, 174, (410+158), (174+37), BLUECOL, PURPLECOL, LOCATION);
 	}else
 	{
-	    //Box for icon
-		DrawHLine (468, 468+42, 172, getcolour (255,255,255));
-		DrawBox (468, 173, 468+42, 173+39, getcolour (255,255,255));
-		DrawHLine (468, 468+42, 174+39, getcolour (255,255,255));
-		
+
 		if (isFolder == 1)
 		{
-			DrawBoxFilled(468+2, 174, (468+40), (174+37), getcolour(255,255,0));
+			//Simple folder "icon"
+			DrawBoxFilled(468+2, 174, (468+40), (174+37), getcolour(0,0,0));
+			DrawBoxFilled(468+2+2, 174+2, (468+40)-2, (174+37)-2, getcolour(255,255,0));
+			DrawBoxFilled(468+2, 174, (468+40), (174+10), getcolour(0,0,0));
+			DrawBoxFilled(468+2+2, 174+2, (468+40-22)-2, (174+10-1)-2, getcolour(255,255,0));
+			DrawBoxFilled((468+40-22)+2, 174, (468+40), (174+10-1)-2, getcolour(84,174,211));
 			//DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), getcolour(255,255,0), getcolour(255,255,0), LOCATION);
 		}
 		else
 		{
+			//Box for icon
+			DrawHLine (468, 468+42, 172, getcolour (255,255,255));
+			DrawBox (468, 173, 468+42, 173+39, getcolour (255,255,255));
+			DrawHLine (468, 468+42, 174+39, getcolour (255,255,255));
+			//Gradient
 			DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), BLUECOL, PURPLECOL, LOCATION);
 		}
 	}
@@ -1056,6 +1072,14 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		//clear entire left side since we want to update all
 		clearLeftPane();
 		ShowScreen();
+		if (displaypath)
+		{
+			//Draw current folder
+			DrawBoxFilled(30, 55, 30+330, 50+16, getcolour(255, 255, 255));
+			setfontsize (10);
+			sprintf (folder, "fat:/%s/", currFolder);
+			DrawText(40, 66, folder);
+		}
 		setfontsize (14);
 		setfontcolour (0xff, 0xff, 0xff);
 		//Do a little math (480 - (16*20+40))/2
@@ -1066,7 +1090,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		for (i = offset; i < (offset + PAGESIZE) && (i < maxfile); ++i){
 			//changed this to limit characters shown in filename since display gets weird
 			//if we let the entire filename appear
-			
+
 			sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[i]);
 	
 			

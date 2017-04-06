@@ -50,6 +50,7 @@ int lasticon;
 u8 filelist[1024][1024];
 u8 currFolder[260];
 int folderCount;
+int displaypath;
 int maxfile;
 extern int cancel;
 extern bool offsetchanged;
@@ -810,6 +811,9 @@ void MC_DeleteMode(int slot)
 	int memitems, err;
 	int selected = 0;
 	int erase;
+	
+	displaypath = 0;
+	
 	clearRightPane();
 	DrawText(386,130,"D e l e t e   M o d e");
 	DrawText(386,134,"_____________________");

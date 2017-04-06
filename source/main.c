@@ -55,6 +55,7 @@ extern u8 filelist[1024][1024];
 extern bool offsetchanged;
 extern u8 currFolder[260];
 extern int folderCount;
+extern int displaypath;
 
 s32 MEM_CARD = CARD_SLOTB;
 extern syssramex *sramex;
@@ -307,6 +308,8 @@ void SD_BackupMode ()
 	int selected = 0;
 	int bytestodo;
 	char buffer[256], text[64];
+	
+	displaypath = 0;
 
 	clearRightPane();
 	DrawText(386,130,"B a c k u p   M o d e");
@@ -318,9 +321,9 @@ void SD_BackupMode ()
 	setfontsize (14);
 	writeStatusBar("Pick a file using UP or DOWN ", "Press A to backup savegame") ;
 #ifdef HW_RVL
-	DrawText(40, 60, "Press R/1 to backup ALL savegames");
+	DrawText(40, 50, "Press R/1 to backup ALL savegames");
 #else
-	DrawText(40, 60, "Press R to backup ALL savegames");
+	DrawText(40, 50, "Press R to backup ALL savegames");
 #endif
 
 	/*** If it's a blank card, get out of here ***/
@@ -419,6 +422,8 @@ void SD_BackupModeAllFiles ()
 	int bytestodo;
 
 	char buffer[128];
+	
+	displaypath = 0;
 
 	clearRightPane();
 	DrawText(386,130," B a c k u p   A l l ");
@@ -471,6 +476,8 @@ void SD_RestoreMode ()
 	int selected;
 	char buffer[256], text[64];
 	int inProgress = 1;
+	
+	displaypath = 1;
 
 	clearRightPane();
 	DrawText(380,130,"R e s t o r e  M o d e");
@@ -483,10 +490,11 @@ void SD_RestoreMode ()
 
 	files = SDGetFileList (1);
 
+	setfontsize (14);
 #ifdef HW_RVL
-	DrawText(40, 60, "Press R/1 to restore ALL savegames");
+	DrawText(40, 50, "Press R/1 to restore ALL savegames");
 #else
-	DrawText(40, 60, "Press R to restore ALL savegames");
+	DrawText(40, 50, "Press R to restore ALL savegames");
 #endif
 
 	if (!files)
@@ -497,7 +505,6 @@ void SD_RestoreMode ()
 	{
 		while(inProgress == 1)
 		{
-			setfontsize (14);
 			writeStatusBar("Pick a file using UP or DOWN", "Press A to restore to Memory Card ") ;
 			
 			//It will wait here until user selected a file
@@ -633,6 +640,9 @@ void SD_RawBackupMode ()
 {
 	s32 writen = 0;
 	char msg[64];
+	
+	displaypath = 0;
+	
 	clearRightPane();
 
 	DrawText(394,224,"___________________");	
@@ -667,6 +677,8 @@ void SD_RawRestoreMode ()
 	s32 writen = 0;
 	int i;
 	int inProgress = 1;
+
+	displaypath = 1;
 
 	clearRightPane();
 	DrawText(380,130,"R A W   R e s t o r e");
