@@ -740,6 +740,11 @@ void showCardInfo(int sel){
 	//clear right pane, but just the card info
 	int bgcolor = getcolour(84,174,211);
 	DrawBoxFilled(375, 165, 605, 390, bgcolor);
+	//clear the right side just in case we went offscreen with previous comment
+	DrawVLine (606, 145, 390, CvtRGB(84,174,211,183,209,240));
+	DrawVLine (608, 145, 390, CvtRGB(230,232,250,242,243,252));
+	DrawBoxFilled(610, 145, 640, 390, getcolour(255,255,255));
+
 	int y = 190, x = 378;
 	int err;
 	char txt[1024];
