@@ -20,7 +20,7 @@ DKV		:= $(shell $(DEVKITPPC)/bin/$(CC) --version | sed 's/^.*(devkitPPC release 
 TARGET		:=	gcmm_GC
 BUILD		:=	build_GC
 SOURCES		:=	source
-DATA		:=	data
+DATA		:=	data data-gc
 INCLUDES	:=
 
 #---------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ $(BUILD):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).dol $(SOURCES)/gcmm-bk.s
+	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).dol
 
 #---------------------------------------------------------------------------------
 run:
@@ -131,12 +131,16 @@ $(OUTPUT).elf: $(OFILES)
 $(OFILES_SOURCES) : $(HFILES)
 
 #---------------------------------------------------------------------------------
-# This rule links in binary data with the .jpg extension
+# These rules link in binary data with the .bmp and .ttf extensions
 #---------------------------------------------------------------------------------
-%.jpg.o	%_jpg.h :	%.jpg
-#---------------------------------------------------------------------------------
+%.ttf.o	%_ttf.h :	%.ttf
 	@echo $(notdir $<)
 	$(bin2o)
+
+%.bmp.o	%_bmp.h :	%.bmp
+	@echo $(notdir $<)
+	$(bin2o)
+#---------------------------------------------------------------------------------
 
 -include $(DEPENDS)
 
