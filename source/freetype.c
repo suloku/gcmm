@@ -25,6 +25,9 @@
 #include <wiiuse/wpad.h>
 #endif
 
+/*** The actual TrueType Font ***/
+#include "font_ttf.h"
+
 #define MCDATAOFFSET 64
 #define FONT_SIZE 16 //pixels
 
@@ -59,10 +62,6 @@ extern syssramex *sramex;
 extern u8 imageserial[12];
 
 static int fonthi, fontlo;
-
-/*** The actual TrueType Font ***/
-extern char fontface[];		/*** From fontface.s ***/
-extern int fontsize;			/*** From fontface.s ***/
 
 /*** From video subsystem ***/
 extern int screenheight;
@@ -130,7 +129,7 @@ int FT_Init ()
 		return 1;
 
 	err =
-	    FT_New_Memory_Face (ftlibrary, (FT_Byte *) fontface, fontsize, 0, &face);
+	    FT_New_Memory_Face (ftlibrary, (FT_Byte *) font_ttf, font_ttf_size, 0, &face);
 	if (err)
 		return 1;
 

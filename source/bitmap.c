@@ -18,6 +18,8 @@
 #include "freetype.h"
 #include "gci.h"
 
+#include "background_bmp.h"
+
 extern GCI gci;
 //*extern GXRModeObj *vmode; /*** Graphics Mode Object ***/
 //extern u32 *xfb[2] = { NULL, NULL }; /*** Framebuffers ***/
@@ -287,5 +289,5 @@ void ShowIcon(u8 *icon) {
 }
 
 void ClearScreen() {
-    ShowBMP(bitmapfile);
+    ShowBMP((u8*) background_bmp);
 }

@@ -959,7 +959,7 @@ s32 FZEROGX_MakeSaveGameValid(s32 chn)
 	u32 serial1,serial2;
 	u16 chksum = 0xFFFF;
 
-	if(stricmp(&FileBuffer[0x08],"f_zero.dat")!=0) return CARD_ERROR_READY;		// check for F-Zero GX system file
+	if(strcasecmp(&FileBuffer[0x08],"f_zero.dat")!=0) return CARD_ERROR_READY;		// check for F-Zero GX system file
 	if((ret=CARD_GetSerialNo(chn,&serial1,&serial2))<0) return ret;			// get encrypted destination memory card serial numbers
 
 	*(u16*)&FileBuffer[0x2066+MCDATAOFFSET] = serial1 >> 16;			// set new serial numbers
@@ -998,12 +998,12 @@ s32 PSO_MakeSaveGameValid(s32 chn)
 	u32 serial1,serial2;
 	u32 pso3offset;
 
-	if(stricmp(&FileBuffer[0x08],"PSO_SYSTEM")==0) {				// check for PSO1&2 system file
+	if(strcasecmp(&FileBuffer[0x08],"PSO_SYSTEM")==0) {				// check for PSO1&2 system file
 		pso3offset = 0x00;
 		goto exit;
 	}
 
-	if(stricmp(&FileBuffer[0x08],"PSO3_SYSTEM")==0) {				// check for PSO3 system file
+	if(strcasecmp(&FileBuffer[0x08],"PSO3_SYSTEM")==0) {				// check for PSO3 system file
 		pso3offset = 0x10;							// PSO3 data block size adjustment
 		goto exit;
 	}
