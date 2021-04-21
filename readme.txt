@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                    GCMM 1.4f by suloku                        ·oø×O0|
+|0O×øo·                    GCMM 1.5  by suloku                        ·oø×O0|
 |                      https://github.com/suloku/gcmm                       |
 |                   (old site: http://code.google.com/p/gcmm)               |
 |                          (Under GPL License)                              |
