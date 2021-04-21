@@ -375,7 +375,7 @@ int SelectMode ()
 		}
 		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_Z)//Delete mode
 		{
-			while ((PAD_ButtonsDown (0) & PAD_BUTTON_B))
+			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_Z))
 			{
 				VIDEO_WaitVSync ();
 			}

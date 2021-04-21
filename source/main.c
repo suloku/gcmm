@@ -919,10 +919,14 @@ int main ()
 			if (!!*(u32*)0x80001800) exit(1);
 			else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #else
-			if (psoid[0] == PSOSDLOADID) PSOReload ();
+			if (psoid[0] == PSOSDLOADID){
+				ShowAction ("Exiting...PSO");
+				PSOReload ();
+			}
 			if (have_sd){
 				FILE *fp = fopen("fat:/autoexec.dol", "rb");
 				if (fp) {
+					ShowAction ("Exiting...autoexec.dol");
 					fseek(fp, 0, SEEK_END);
 					int size = ftell(fp);
 					fseek(fp, 0, SEEK_SET);
@@ -938,6 +942,7 @@ int main ()
 				fclose(fp);
 				}
 			}
+			ShowAction ("Exiting...Reboot");
 			SYS_ResetSystem(SYS_HOTRESET, 0, 0);
 #endif
 			break; //PSO_Reload

@@ -22,7 +22,7 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 * Format the memory card
 * Wiimote and GameCube controller support
 * Power button support
-* Front SD and FAT32 USB device (wii) and SDGecko (gamecube) support
+* Front SD and FAT32 USB device (wii) and SDGecko/SD2SP2 (gamecube) support
 * Shows savegame information, alongside animated Icon and Banner!
 * A (somewhat) nice UI
 * Open Source!
@@ -30,6 +30,23 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+[What's New 1.5 - april 21, 2021 - By suloku]
+* Merged carstene1ns changes to compile with latest libraries
+* Adopted libogc's latest changes to card.c, no longer needs system.h. Thanks tueidj for your patches all these years!
+* Fixed bug in card.c which prevented some saves sharing filename characters not being restored (paper mario)
+* Improved SD2SP2 boot sequence:
+	- By default SD2SP2 will be used. If there is none GCMM will ask for SD Gecko location (slot A or B)
+	- Holding A or Z while booting will prompt if you want to use SD2SP2 or SD Gecko. If SD Gecko is selected then it's slot can be selected.
+* Fixed GC rebooting:
+	Gamecube mode exit secuence:
+		1.- If there is a reboot stub (PSOLOAD/SDLOADER), GCMM will return to it
+		2.- If not, GCMM will try to load autoexec.dol in fat device used in GCMM
+		3.- If not, restart.
+
+Note: When using SDLOADER it is recommended to run Swiss, as returning to SDLOADER will break it (selection bar will be red) and dol loading will not work. It is adviced to have an autoexec.dol available (swiss recommended). This happens in Wii's gamecube mode, I don't know if gamecube has the same behavior.
+
+[What's New 1.4g - january 03, 2020 - By suloku]
+* Added SD2SP2 support ("released" as beta, no official release made)
 
 [What's New 1.4f - april 05, 2017 - By suloku]
 * dragonbane0 made a mod of version 1.4c with folder selection and alphabetical sorting. Zephiles pointed this out and the changes have been merged with some little extra tweaks. Thanks you both!
@@ -211,7 +228,7 @@ About usb devices:
 Developers:
 
 * LibOGC card functions works with time functions that use Epoch (seconds since jan 1, 1970) as reference, while GameCube works with seconds since jan 1, 2000). The difference is 946684800 seconds
-* GCMM now uses libogc 1.8.11 git (2012-07-25) card.c, card.h and system.h with tueidj's patches for proper memory card unlocking. It would be wise to update those files in GCMM if changes are made to libogc concerning other functions. Note that even if libogc asumes the changes, as GCMM now uses some static functions from libogc, it needs card.c and card.h, but if libogc updates the sramex structure (system.h) and fixes the checksums in card.c, system.h will no longer be needed.
+* GCMM now uses libogc 1.8.11 git (2012-07-25) card.c, card.h and system.h with tueidj's patches for proper memory card unlocking. It would be wise to update those files in GCMM if changes are made to libogc concerning other functions. Note that even if libogc asumes the changes, as GCMM now uses some static functions from libogc, it needs card.c and card.h, but if libogc updates the sramex structure (system.h) and fixes the checksums in card.c, system.h will no longer be needed. --> as of 1.5 system.h is no longer needed. Still using custom card.c and card.h (for raw management and fixing PSO and FZERO savegames), card.c is updated to latest one in libogc at time of release. Libogc card unlocking has been adopted.
 * Very good sources of documentation are libogc and dolphin's source code.
 * Card_Init() shall be called only once. Any subsequent call will be pointless; to change the company and gamecode one should use Card_setgamecode() and Card_setcompany libogc functions.
 

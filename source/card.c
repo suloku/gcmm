@@ -36,7 +36,7 @@ distribution.
 #include <gcutil.h>
 #include <ogc/machine/asm.h>
 #include <ogc/machine/processor.h>
-#include "system.h"
+#include <ogc/system.h>
 #include <ogcsys.h>
 #include <ogc/cache.h>
 #include <ogc/lwp.h>
@@ -135,6 +135,7 @@ typedef struct _card_block {
 	void *cmd_usr_buf;
 	lwpq_t wait_sync_queue;
 	syswd_t timeout_svc;
+	dsptask_t dsp_task;
 
 	cardcallback card_ext_cb;
 	cardcallback card_tx_cb;
@@ -144,6 +145,63 @@ typedef struct _card_block {
 	cardcallback card_erase_cb;
 	cardcallback card_unlock_cb;
 } card_block;
+
+#if defined(HW_RVL)
+
+static u32 _cardunlockdata[0x160] ATTRIBUTE_ALIGN(32) =
+{
+	0x00000000,0x00000000,0x00000000,0x00000000,
+	0x00000000,0x00000000,0x00000021,0x02ff0021,
+	0x13061203,0x12041305,0x009200ff,0x0088ffff,
+	0x0089ffff,0x008affff,0x008bffff,0x8f0002bf,
+	0x008816fc,0xdcd116fd,0x000016fb,0x000102bf,
+	0x008e25ff,0x0380ff00,0x02940027,0x02bf008e,
+	0x1fdf24ff,0x02403fff,0x00980400,0x009a0010,
+	0x00990000,0x8e0002bf,0x009402bf,0x864402bf,
+	0x008816fc,0xdcd116fd,0x000316fb,0x00018f00,
+	0x02bf008e,0x0380cdd1,0x02940048,0x27ff0380,
+	0x00010295,0x005a0380,0x00020295,0x8000029f,
+	0x00480021,0x8e0002bf,0x008e25ff,0x02bf008e,
+	0x25ff02bf,0x008e25ff,0x02bf008e,0x00c5ffff,
+	0x03403fff,0x1c9f02bf,0x008e00c7,0xffff02bf,
+	0x008e00c6,0xffff02bf,0x008e00c0,0xffff02bf,
+	0x008e20ff,0x03403fff,0x1f5f02bf,0x008e21ff,
+	0x02bf008e,0x23ff1205,0x1206029f,0x80b50021,
+	0x27fc03c0,0x8000029d,0x008802df,0x27fe03c0,
+	0x8000029c,0x008e02df,0x2ece2ccf,0x00f8ffcd,
+	0x00f9ffc9,0x00faffcb,0x26c902c0,0x0004029d,
+	0x009c02df,0x00000000,0x00000000,0x00000000,
+	0x00000000,0x00000000,0x00000000,0x00000000
+};
+
+#elif defined(HW_DOL)
+
+static u32 _cardunlockdata[0x160] ATTRIBUTE_ALIGN(32) =
+{
+	0x00000000,0x00000000,0x00000000,0x00000000,
+	0x00000000,0x00000000,0x00000021,0x02ff0021,
+	0x13061203,0x12041305,0x009200ff,0x0088ffff,
+	0x0089ffff,0x008affff,0x008bffff,0x8f0002bf,
+	0x008816fc,0xdcd116fd,0x000016fb,0x000102bf,
+	0x008e25ff,0x0380ff00,0x02940027,0x02bf008e,
+	0x1fdf24ff,0x02400fff,0x00980400,0x009a0010,
+	0x00990000,0x8e0002bf,0x009402bf,0x864402bf,
+	0x008816fc,0xdcd116fd,0x000316fb,0x00018f00,
+	0x02bf008e,0x0380cdd1,0x02940048,0x27ff0380,
+	0x00010295,0x005a0380,0x00020295,0x8000029f,
+	0x00480021,0x8e0002bf,0x008e25ff,0x02bf008e,
+	0x25ff02bf,0x008e25ff,0x02bf008e,0x00c5ffff,
+	0x03400fff,0x1c9f02bf,0x008e00c7,0xffff02bf,
+	0x008e00c6,0xffff02bf,0x008e00c0,0xffff02bf,
+	0x008e20ff,0x03400fff,0x1f5f02bf,0x008e21ff,
+	0x02bf008e,0x23ff1205,0x1206029f,0x80b50021,
+	0x27fc03c0,0x8000029d,0x008802df,0x27fe03c0,
+	0x8000029c,0x008e02df,0x2ece2ccf,0x00f8ffcd,
+	0x00f9ffc9,0x00faffcb,0x26c902c0,0x0004029d,
+	0x009c02df,0x00000000,0x00000000,0x00000000,
+	0x00000000,0x00000000,0x00000000,0x00000000
+};
+#endif
 
 static u32 card_sector_size[] =
 {
@@ -178,7 +236,6 @@ static card_block cardmap[2];
 
 static void __card_mountcallback(s32 chn,s32 result);
 static void __erase_callback(s32 chn,s32 result);
-static void __dsp_donecallback(u32 chn);
 static s32 __dounlock(s32 chn,u32 *key);
 static s32 __card_readsegment(s32 chn,cardcallback callback);
 s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
@@ -729,7 +786,7 @@ static s32 __card_allocblock(s32 chn,u32 blocksneed,cardcallback callback)
 		  wrong.
 		*/
 		count++;
-		if(count>((card->blocks)-CARD_SYSAREA)) return CARD_ERROR_BROKEN;
+		if(count>(card->blocks-CARD_SYSAREA)) return CARD_ERROR_BROKEN;
 
 		currblock++;
 	    if(currblock<CARD_SYSAREA || currblock>=card->blocks) currblock = CARD_SYSAREA;
@@ -1866,12 +1923,13 @@ static void __card_dounmount(s32 chn,s32 result)
 	_CPU_ISR_Restore(level);
 }
 
+
 static s32 __card_domount(s32 chn)
-{
+{	
 	u8 status,kval;
 	s32 ret = CARD_ERROR_READY;
-	u8 sum, cnt;
-	u32 id,idx;
+	u32 sum;
+	u32 id,idx,cnt;
 	card_block *card;
 	syssramex *sramex;
 
@@ -1903,7 +1961,7 @@ static s32 __card_domount(s32 chn)
 
 				if((ret=__card_clearstatus(chn))<0) goto exit;
 				if((ret=__card_readstatus(chn,&status))<0) goto exit;
-
+				
 				if(EXI_Probe(chn)==0) {
 					ret = CARD_ERROR_NOCARD;
 					goto exit;
@@ -1913,7 +1971,7 @@ static s32 __card_domount(s32 chn)
 					printf("__card_domount(card locked)\n");
 #endif
 					if((ret=__dounlock(chn,card->key))<0) goto exit;
-
+				
 					cnt = 0;
 					sum = 0;
 					sramex = __SYS_LockSramEx();
@@ -1923,9 +1981,9 @@ static s32 __card_domount(s32 chn)
 						sum += kval;
 						cnt++;
 					}
-					sramex->flashID_chksum[chn] = ~sum;
+					sum = (sum^-1)&0xff;
+					sramex->flashID_chksum[chn] = sum;
 					__SYS_UnlockSramEx(1);
-					__dsp_donecallback(chn);
 					return ret;
 				}
 				card->mount_step = 1;
@@ -1937,13 +1995,11 @@ static s32 __card_domount(s32 chn)
 					sum += sramex->flash_id[chn][cnt];
 					cnt++;
 				}
-				cnt = ~sramex->flashID_chksum[chn];
+				cnt = sramex->flashID_chksum[chn];
 				__SYS_UnlockSramEx(0);
-
+				
+				sum = (sum^-1)&0xff;
 				if(cnt!=sum) {
-#ifdef _CARD_DEBUG
-					printf("__card_domount: sram mismatch\n");
-#endif
 					ret = CARD_ERROR_IOERROR;
 					goto exit;
 				}
@@ -1960,12 +2016,12 @@ static s32 __card_domount(s32 chn)
 	}
 
 	if((ret=__card_read(chn,(card->sector_size*(card->mount_step-2)),card->sector_size,card->workarea+((card->mount_step-2)<<13),__card_mountcallback))<0) goto exit;
-	return ret;
-
+	return ret;	
+	
 exit:
 	EXI_Unlock(chn);
 	__card_dounmount(chn,ret);
-
+	
 	return ret;
 }
 
@@ -2143,21 +2199,46 @@ static s32 __card_readarrayunlock(s32 chn,u32 address,void *buffer,u32 len,u32 f
 	return ret;
 }
 
+static void __dsp_initcallback(dsptask_t *task)
+{
+	u32 chn;
+	card_block *card = NULL;
+#ifdef _CARD_DEBUG
+	printf("__dsp_initcallback(%p)\n",task);
+#endif
+	chn = 0;
+	while(chn<EXI_CHANNEL_2) {
+		card = &cardmap[chn];
+		if(&card->dsp_task==task) break;
+		chn++;
+	}
+	if(chn>=EXI_CHANNEL_2) return;
+	
+	DSP_SendMailTo(0xFF000000);
+	while(DSP_CheckMailTo());
+	DSP_SendMailTo((u32)card->workarea);
+	while(DSP_CheckMailTo());
+}
+
 static u8 tmp_buffer[64] ATTRIBUTE_ALIGN(32);
-static void __dsp_donecallback(u32 chn)
+static void __dsp_donecallback(dsptask_t *task)
 {
 
-	u8 status = 0;
+	u8 status;
 	s32 ret;
-	u32 len,key;
+	u32 chn,len,key;
 	u32 workarea,val;
-	card_block *card;
+	card_block *card = NULL;
 #ifdef _CARD_DEBUG
-	printf("__dsp_donecallback(%d)\n",chn);
+	printf("__dsp_donecallback(%p)\n",task);
 #endif
-
+	chn = 0;
+	while(chn<EXI_CHANNEL_2) {
+		card = &cardmap[chn];
+		if(&card->dsp_task==task) break;
+		chn++;
+	}
 	if(chn>=EXI_CHANNEL_2) return;
-	card = &cardmap[chn];
 
 	workarea = (u32)card->workarea;
 	workarea = ((workarea+47)&~0x1f);
@@ -2170,7 +2251,7 @@ static void __dsp_donecallback(u32 chn)
 		__card_mountcallback(chn,CARD_ERROR_NOCARD);
 		return;
 	}
-
+	
 	val = exnor(card->cipher,((len+card->latency+4)<<3)+1);
 	{
 		u32 a,b,c,r1,r2,r3;
@@ -2205,51 +2286,12 @@ static void __dsp_donecallback(u32 chn)
 	__card_mountcallback(chn,ret);
 }
 
-static void __dsp_transform(uint32_t data, uint32_t lastdata, uint32_t *cntxt, uint8_t rotate)
-{
-	uint32_t input;
-
-	input = ((data<<8)&0xF000)|((lastdata<<4)&0x0F00)|((data<<4)&0x00F0)|(lastdata&0x000F);
-	if (input & 0x0080)
-		input ^= 0xFF00;
-
-	cntxt[0] += input;
-	cntxt[1] += _ROTL(((cntxt[2]^cntxt[3])+cntxt[0]), (32-(rotate&31)));
-	cntxt[2] = (cntxt[3]&cntxt[0]) | ((cntxt[0]^0xFFFF0000)&cntxt[1]);
-	cntxt[3] = cntxt[0] ^ cntxt[1] ^ cntxt[2];
-}
-
-static uint32_t __dsp_hash(const uint8_t *data, uint16_t length)
-{
-	uint32_t cntxt[4];
-	uint8_t rotate;
-	uint16_t i;
-
-	cntxt[0] = 0;
-	cntxt[1] = 0x05EFE0AA;
-	cntxt[2] = 0xDAF4B157;
-	cntxt[3] = 0x6BBEC3B6;
-
-	for (i=0; i < length; i++)
-		cntxt[0] += data[i];
-
-	rotate = cntxt[0]+9;
-	cntxt[0] += 0x170A7489;
-
-	while (--length)
-	{
-		__dsp_transform(data[1], data[0], cntxt, rotate++);
-		data++;
-	}
-
-	return cntxt[1];
-}
-
 static s32 __dounlock(s32 chn,u32 *key)
 {
 	u32 array_addr,len,val;
 	u32 a,b,c,d,e;
 	card_block *card = &cardmap[chn];
+	u32 *workarea = card->workarea;
 	u32 *cipher1 = (u32*)(((u32)card->workarea+47)&~31);
 	u32 *cipher2 = &cipher1[8];
 #ifdef _CARD_DEBUG
@@ -2257,9 +2299,9 @@ static s32 __dounlock(s32 chn,u32 *key)
 #endif
 	array_addr = __card_initval();
 	len = __card_dummylen();
-
+	
 	if(__card_readarrayunlock(chn,array_addr,tmp_buffer,len,0)<0) return CARD_ERROR_NOCARD;
-
+	
 
 	val = exnor_1st(array_addr,(len<<3)+1);
 	{
@@ -2284,7 +2326,7 @@ static s32 __dounlock(s32 chn,u32 *key)
 	c = ((u32*)tmp_buffer)[2];
 	d = ((u32*)tmp_buffer)[3];
 	e = ((u32*)tmp_buffer)[4];
-
+	
 	a = a^card->cipher;
 	val = exnor(card->cipher,32);
 	{
@@ -2298,7 +2340,7 @@ static s32 __dounlock(s32 chn,u32 *key)
 		r1 = (val|(r3>>31));
 		card->cipher = r1;
 	}
-
+	
 	b = b^card->cipher;
 	val = exnor(card->cipher,32);
 	{
@@ -2312,7 +2354,7 @@ static s32 __dounlock(s32 chn,u32 *key)
 		r1 = (val|(r3>>31));
 		card->cipher = r1;
 	}
-
+	
 	c = c^card->cipher;
 	val = exnor(card->cipher,32);
 	{
@@ -2326,7 +2368,7 @@ static s32 __dounlock(s32 chn,u32 *key)
 		r1 = (val|(r3>>31));
 		card->cipher = r1;
 	}
-
+	
 	d = d^card->cipher;
 	val = exnor(card->cipher,32);
 	{
@@ -2340,7 +2382,7 @@ static s32 __dounlock(s32 chn,u32 *key)
 		r1 = (val|(r3>>31));
 		card->cipher = r1;
 	}
-
+	
 	e = e^card->cipher;
 	val = exnor(card->cipher,(len<<3));
 	{
@@ -2354,7 +2396,7 @@ static s32 __dounlock(s32 chn,u32 *key)
 		r1 = (val|(r3>>31));
 		card->cipher = r1;
 	}
-
+	
 	val = exnor(card->cipher,33);
 	{
 		u32 a,b,c,r1,r2,r3;
@@ -2367,15 +2409,36 @@ static s32 __dounlock(s32 chn,u32 *key)
 		r1 = (val|(r3>>31));
 		card->cipher = r1;
 	}
-
+	
 	cipher1[0] = d;
 	cipher1[1] = e;
-	*cipher2 = __dsp_hash((u8*)cipher1, 8);
+	workarea[0] = (u32)cipher1;
+	workarea[1] = 8;
+#ifdef HW_RVL
+	workarea[2] = 0x10000000; // use MEM2 base
+#else
+	workarea[2] = 0; // use ARAM base
+#endif
+	workarea[3] = (u32)cipher2;
+	DCFlushRange(cipher1,8);
+	DCInvalidateRange(cipher2,4);
+	DCFlushRange(workarea,16);
 
+	card->dsp_task.prio = 255;
+	card->dsp_task.iram_maddr = (u16*)MEM_VIRTUAL_TO_PHYSICAL(_cardunlockdata);
+	card->dsp_task.iram_len = 352;
+	card->dsp_task.iram_addr = 0x0000;
+	card->dsp_task.init_vec = 16;
+	card->dsp_task.res_cb = NULL;
+	card->dsp_task.req_cb = NULL;
+	card->dsp_task.init_cb = __dsp_initcallback;
+	card->dsp_task.done_cb = __dsp_donecallback;
+	DSP_AddTask(&card->dsp_task);
+	
 	key[0] = a;
 	key[1] = b;
 	key[2] = c;
-
+	
 	return CARD_ERROR_READY;
 }
 
@@ -2385,12 +2448,13 @@ s32 CARD_Init(const char *gamecode,const char *company)
 
 	if(card_inited) return CARD_ERROR_READY;
 #ifdef _CARD_DEBUG
-	printf("CARD_Init(%s,%s,%d)\n",gamecode,company);
+	printf("CARD_Init(%s,%s)\n",gamecode,company);
 #endif
 	if(gamecode && strlen(gamecode)<=4) memcpy(card_gamecode,gamecode,4);
 	if(company && strlen(company)<=2) memcpy(card_company,company,2);
 
 	_CPU_ISR_Disable(level);
+	DSP_Init();
 
 	memset(cardmap,0,sizeof(card_block)*2);
 	for(i=0;i<2;i++) {
