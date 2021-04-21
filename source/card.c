@@ -196,10 +196,10 @@ static sys_resetinfo card_resetinfo = {
 	127
 };
 
-extern unsigned long gettick();
-extern long long gettime();
-extern syssram* __SYS_LockSram();
-extern syssramex* __SYS_LockSramEx();
+extern unsigned long gettick(void);
+extern long long gettime(void);
+extern syssram* __SYS_LockSram(void);
+extern syssramex* __SYS_LockSramEx(void);
 extern u32 __SYS_UnlockSram(u32 write);
 extern u32 __SYS_UnlockSramEx(u32 write);
 
@@ -1228,7 +1228,7 @@ static void __read_callback(s32 chn,s32 result)
 					ret = CARD_ERROR_BROKEN;
 					goto exit;
 				}
-				len = file->len<card->sector_size?card->sector_size:file->len;
+				len = file->len<card->sector_size?file->len:card->sector_size;
 				if(__card_read(chn,(file->iblock*card->sector_size),len,card->cmd_usr_buf,__read_callback)>=0) return;
 
 			}
@@ -2000,13 +2000,13 @@ static __inline__ void __card_srand(u32 val)
 	crand_next = val;
 }
 
-static __inline__ u32 __card_rand()
+static __inline__ u32 __card_rand(void)
 {
 	crand_next = (crand_next*0x41C64E6D)+12345;
 	return _SHIFTR(crand_next,16,15);
 }
 
-static u32 __card_initval()
+static u32 __card_initval(void)
 {
 	u32 ticks = gettick();
 
@@ -2014,7 +2014,7 @@ static u32 __card_initval()
 	return ((0x7FEC8000|__card_rand())&~0x00000fff);
 }
 
-static u32 __card_dummylen()
+static u32 __card_dummylen(void)
 {
 	u32 ticks = gettick();
 	u32 val = 0,cnt = 0,shift = 1;
@@ -2643,7 +2643,7 @@ s32 CARD_CreateAsync(s32 chn,const char *filename,u32 size,card_file *file,cardc
 	for(i=0;i<CARD_MAXFILES;i++) {
 		if(entry[i].gamecode[0]==0xff) {
 			if(filenum==-1) filenum = i;
-		} else if(memcmp(entry[i].filename,filename,len)==0) {
+		} else if(memcmp(entry[i].filename,filename,CARD_FILENAMELEN)==0) {
 			if((card_gamecode[0]==0xff || card_company[0]==0xff)
 				|| ((card_gamecode[0]!=0xff && memcmp(entry[i].gamecode,card_gamecode,4)==0)
 				&& (card_company[0]!=0xff && memcmp(entry[i].company,card_company,2)==0))) {
@@ -2717,7 +2717,7 @@ s32 CARD_CreateEntryAsync(s32 chn,card_dir *direntry,card_file *file,cardcallbac
 	for(i=0;i<CARD_MAXFILES;i++) {
 		if(entry[i].gamecode[0]==0xff) {
 			if(filenum==-1) filenum = i;
-		} else if(memcmp(entry[i].filename,direntry->filename,len)==0) {
+		} else if(memcmp(entry[i].filename,direntry->filename,CARD_FILENAMELEN)==0) {
 			if((entry->gamecode[0]==0xff || entry->company[0]==0xff)
 				|| ((entry->gamecode[0]!=0xff && memcmp(entry[i].gamecode,entry->gamecode,4)==0)
 				&& (entry->company[0]!=0xff && memcmp(entry[i].company,entry->company,2)==0))) {
@@ -2954,7 +2954,7 @@ s32 CARD_GetErrorCode(s32 chn)
 	return card->result;
 }
 
-s32 __card_findnext(card_dir *dir)
+static s32 __card_findnext(card_dir *dir)
 {
 	s32 ret;
 	struct card_dat *dirblock = NULL;

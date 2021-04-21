@@ -19,7 +19,7 @@ DKV		:= $(shell $(DEVKITPPC)/bin/$(CC) --version | sed 's/^.*(devkitPPC release 
 #---------------------------------------------------------------------------------
 TARGET		:=	gcmm_GC
 BUILD		:=	build_GC
-SOURCES		:=	source
+SOURCES		:=	source source/aram
 DATA		:=	data data-gc
 INCLUDES	:=
 

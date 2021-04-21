@@ -34,11 +34,15 @@
 #include "freetype.h"
 #include "bitmap.h"
 
+#ifndef HW_RVL
+#include "aram/sidestep.h"
+#endif
+
 #define PSOSDLOADID 0x7c6000a6
 //Comment FLASHIDCHECK to allow writing any image to any mc. This will corrupt official cards.
 #define FLASHIDCHECK
 
-const char appversion[] = "v1.4f";
+const char appversion[] = "v1.5beta";
 int mode;
 int cancel;
 int doall;
@@ -57,6 +61,7 @@ extern u8 currFolder[260];
 extern int folderCount;
 extern int displaypath;
 
+u8 SD2SP2;
 s32 MEM_CARD = CARD_SLOTB;
 extern syssramex *sramex;
 extern u8 imageserial[12];
@@ -73,6 +78,7 @@ static void updatePAD(u32 retrace)
 // 1 for Internal SD, 0 for fat32 usb
 static int initFAT(int device)
 {
+	SD2SP2 = 0;
 	ShowAction("Mounting device...");
 #ifdef	HW_RVL
 	if (device){//try SD card first
@@ -178,10 +184,17 @@ void deinitFAT()
 	__io_wiisd.shutdown();
 	__io_usbstorage.shutdown();
 #else
-	if(MEM_CARD)
-		__io_gcsda.shutdown();
-	if(!MEM_CARD)
-		__io_gcsdb.shutdown();
+	if (SD2SP2)
+	{
+		__io_gcsd2.shutdown();
+	}
+	else
+	{
+		if(MEM_CARD)
+			__io_gcsda.shutdown();
+		if(!MEM_CARD)
+			__io_gcsdb.shutdown();
+	}
 #endif
 }
 
@@ -807,9 +820,42 @@ int main ()
 	initialise_power();
 	have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT32 USB device?", "USB", "SD"));
 #else
-	//Returns 1 (memory card in slot B, sd gecko in slot A) if A button was pressed and 0 if B button was pressed
-	MEM_CARD = WaitPromptChoice ("Please select the slot where SD Gecko is inserted", "SLOT B", "SLOT A");
-	have_sd = initFAT(MEM_CARD);
+
+	u8 sd2sp2select = 0;
+	u32 p = PAD_ButtonsHeld(0);
+
+	//First try for a SD2SP2 device
+	SD2SP2 = 0;
+	__io_gcsd2.startup();
+	if (__io_gcsd2.isInserted())
+	{
+		//If Z trigger or A button is held in startup, ask if sd2sp2 should be used
+		if ( p & PAD_BUTTON_A || p & PAD_TRIGGER_Z )
+		{
+			writeStatusBar("Use SD2SP2 or SD Gecko?", "B = SD Gecko   :   A = SD2SP2");
+			WaitRelease();
+			SD2SP2 = WaitPromptChoice ("Use SD2SP2 or SD Gecko?", "SD Gecko", "SD2SP2");
+
+		}
+		if(SD2SP2)
+		{
+			if (!fatMountSimple ("fat", &__io_gcsd2))
+			{
+				WaitPrompt("SD2SP2 detected, but Error Mounting SD fat! Defaulting to SD Gecko");
+				SD2SP2 = 0;
+				
+			}else
+			{
+				have_sd = 1;
+			}
+		}
+	}
+	if (!SD2SP2) //Ask where SD gecko is located if no SD2SP2 is detected
+	{
+		//Returns 1 (memory card in slot B, sd gecko in slot A) if A button was pressed and 0 if B button was pressed
+		MEM_CARD = WaitPromptChoice ("Please select the slot where SD Gecko is inserted", "SLOT B", "SLOT A");
+		have_sd = initFAT(MEM_CARD);
+	}
 #endif
 
 
@@ -832,7 +878,21 @@ int main ()
 				MEM_CARD = CARD_SLOTB;
 			}
 		}
+#else
+		//Allow memory card selection when using SD2SP2 device.
+		if (SD2SP2){
+			if ((mode != 500 ) && (mode != 100) && (mode != 600)){
+				if (WaitPromptChoice ("Please select a memory card slot", "Slot B", "Slot A") == 1)
+				{
+					MEM_CARD = CARD_SLOTA;
+				}else
+				{
+					MEM_CARD = CARD_SLOTB;
+				}
+			}
+		}
 #endif
+
 		/*** Mode == 100 for backup, 200 for restore ***/
 		switch (mode)
 		{
@@ -860,7 +920,25 @@ int main ()
 			else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #else
 			if (psoid[0] == PSOSDLOADID) PSOReload ();
-			else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+			if (have_sd){
+				FILE *fp = fopen("fat:/autoexec.dol", "rb");
+				if (fp) {
+					fseek(fp, 0, SEEK_END);
+					int size = ftell(fp);
+					fseek(fp, 0, SEEK_SET);
+					if ((size > 0) && (size < (AR_GetSize() - (64*1024)))) {
+						u8 *dol = (u8*) memalign(32, size);
+						if (dol) {
+							fread(dol, 1, size, fp);
+							DOLtoARAM(dol, 0, NULL);
+						}
+						//We shouldn't reach this point
+						if (dol != NULL) free(dol);
+					}
+				fclose(fp);
+				}
+			}
+			SYS_ResetSystem(SYS_HOTRESET, 0, 0);
 #endif
 			break; //PSO_Reload
 		case 600 : //User wants to backup full card
@@ -921,5 +999,13 @@ int main ()
 		offsetchanged = true;
 	}
 	while (1);
+	//Should never reach this point...
+#ifdef HW_RVL
+	//if there's a loader stub load it, if not return to wii menu.
+	if (!!*(u32*)0x80001800) exit(1);
+	else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
+#else
+	SYS_ResetSystem(SYS_HOTRESET, 0, 0);
+#endif
 	return 0;
 }
