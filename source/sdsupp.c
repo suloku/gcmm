@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-//#include <sdcard.h>
 #include <sys/dir.h>
 #include <dirent.h>
 
@@ -15,7 +14,6 @@
 #include "freetype.h"
 #include "gci.h"
 #include "mcard.h"
-#include "card.h"
 #include "raw.h"
 
 #define PAGESIZE 20

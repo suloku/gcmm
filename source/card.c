@@ -27,6 +27,8 @@ distribution.
 
 -------------------------------------------------------------*/
 
+#include <ogc/libversion.h>
+#if (_V_MAJOR_ <= 2) && (_V_MINOR_ <= 2)
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -246,6 +248,11 @@ static s32 __card_writepage(s32 chn,cardcallback callback);
 s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
 static s32 __card_onreset(s32 final);
 s32 CARD_GetSerialNo(s32 chn,u32 *serial1,u32 *serial2);
+
+#define ogc_card_sync __card_sync
+#define ogc_card_read __card_read
+#define ogc_card_sectorerase __card_sectorerase
+#define ogc_card_write __card_write
 
 static sys_resetinfo card_resetinfo = {
 	{},
@@ -3311,3 +3318,5 @@ s32 CARD_GetFreeBlocks(s32 chn, u16* freeblocks)
 
 	return ret;
 }
+
+#endif

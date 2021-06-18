@@ -16,8 +16,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <ogc/libversion.h>
+#if (_V_MAJOR_ <= 2) && (_V_MINOR_ <= 2)
+#ifndef CARD_SetStatusEx
+#define CARD_SetStatusEx __card_setstatusex
+#endif
+#ifndef CARD_GetStatusEx
+#define CARD_GetStatusEx __card_getstatusex
+#endif
 #include "card.h"
+extern s32 __card_setstatusex(s32 chn,s32 fileno,struct card_direntry *entry);
+extern s32 __card_getstatusex(s32 chn,s32 fileno,struct card_direntry *entry);
+s32 CARD_GetFreeBlocks(s32 chn, u16* freeblocks);
+s32 CARD_GetSerialNo(s32 chn,u32 *serial1,u32 *serial2);
+#else
+#include <ogc/card.h>
+#endif
+
 #include "mcard.h"
 #include "gci.h"
 #include "freetype.h"
@@ -380,7 +395,7 @@ int CardReadFileHeader (int slot, int id)
 #else
 	//get directory entry (same as gci header, but with all the data)
 	memset(&gci,0,sizeof(GCI));
-	__card_getstatusex(slot,CardFile.filenum,&gci);
+	CARD_GetStatusEx(slot,CardFile.filenum,&gci);
 	/*** Copy to head of buffer ***/
 	memcpy(FileBuffer, &gci, sizeof(GCI));
 #endif
@@ -569,7 +584,7 @@ int CardReadFile (int slot, int id)
 #else
 	//get directory entry (same as gci header, but with all the data)
 	memset(&gci,0,sizeof(GCI));
-	__card_getstatusex(slot,CardFile.filenum,&gci);
+	CARD_GetStatusEx(slot,CardFile.filenum,&gci);
 	/*** Copy to head of buffer ***/
 	memcpy(FileBuffer, &gci, sizeof(GCI));
 #endif
@@ -732,7 +747,7 @@ tryagain:
 	//For some reason this sets the file to Move->allowed, Copy->not allowed, Public file instead of the actual permission value
 	CARD_SetAttributes(slot, CardFile.filenum, &permission);
 #else
-	__card_setstatusex(slot, CardFile.filenum, &gci);
+	CARD_SetStatusEx(slot, CardFile.filenum, &gci);
 #endif
 
 	CARD_Close (&CardFile);

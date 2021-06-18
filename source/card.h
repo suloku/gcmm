@@ -27,9 +27,11 @@ distribution.
 
 -------------------------------------------------------------*/
 
-
 #ifndef __CARD_H__
 #define __CARD_H__
+
+#include <ogc/libversion.h>
+#if (_V_MAJOR_ <= 2) && (_V_MINOR_ <= 2)
 
 /*!
 \file card.h
@@ -644,5 +646,7 @@ s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
 #ifdef __cplusplus
    }
 #endif /* __cplusplus */
+
+#endif
 
 #endif
