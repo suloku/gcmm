@@ -42,7 +42,7 @@ extern int lasticon;
 
 extern u8 filelist[1024][1024];
 extern u32 maxfile;
-extern GCI gci;
+extern card_direntry gci;
 extern int OFFSET;
 
 extern u8 currFolder[260];
@@ -69,13 +69,13 @@ int SDSaveMCImage ()
 	int bytesToWrite = 0;
 	//sd_file *handle;
 	FILE *handle;
-	GCI thisgci;
+	card_direntry thisgci;
 	int check;
 	int filenumber = 0;
 	int retries = 0;
 
 	/*** Make a copy of the Card Dir ***/
-	memcpy (&thisgci, FileBuffer, sizeof (GCI));
+	memcpy (&thisgci, FileBuffer, sizeof (card_direntry));
 	memset( tfile, 0, 40 );
 	company[2] = 0;
 	gamecode[4] = 0;
@@ -125,7 +125,7 @@ int SDSaveMCImage ()
 			}
 		}
 
-		bytesToWrite = (thisgci.filesize8 * 8192) + MCDATAOFFSET;
+		bytesToWrite = (thisgci.length * 8192) + MCDATAOFFSET;
 		//SDCARD_WriteFile (handle, FileBuffer, bytesToWrite);
 		//SDCARD_CloseFile (handle);
 		fwrite (FileBuffer , 1 , bytesToWrite , handle );
@@ -336,9 +336,9 @@ int SDLoadMCImageHeader(char *sdfilename)
 	fseek(handle, OFFSET, SEEK_SET);
 
 	/*** Read the file header ***/
-	fread (FileBuffer,1,sizeof(GCI),handle);
+	fread (FileBuffer,1,sizeof(card_direntry),handle);
 
-	u16 length = (bytesToRead - OFFSET - sizeof(GCI)) / 0x2000;
+	u16 length = (bytesToRead - OFFSET - sizeof(card_direntry)) / 0x2000;
 	switch(OFFSET)
 	{
 	case 0x110:
@@ -391,8 +391,8 @@ int SDLoadMCImageHeader(char *sdfilename)
 	GCIMakeHeader();
 #else
 	//Let's get the full header as is, instead of populating it...
-	memset(&gci, 0xff, sizeof(GCI)); /*** Clear out the cgi header ***/
-	memcpy (&gci, FileBuffer, sizeof (GCI));
+	memset(&gci, 0xff, sizeof(card_direntry)); /*** Clear out the cgi header ***/
+	memcpy (&gci, FileBuffer, sizeof (card_direntry));
 #endif
 
 	/***

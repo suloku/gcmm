@@ -20,7 +20,7 @@
 
 #include "background_bmp.h"
 
-extern GCI gci;
+extern card_direntry gci;
 //*extern GXRModeObj *vmode; /*** Graphics Mode Object ***/
 //extern u32 *xfb[2] = { NULL, NULL }; /*** Framebuffers ***/
 //extern int whichfb = 0; /*** Frame buffer toggle ***/

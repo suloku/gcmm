@@ -80,7 +80,7 @@ static int cardcount = 0;
 static u8 permission;
 s32 memsize, sectsize;
 
-GCI gci;
+card_direntry gci;
 
 //The following code is made by Ralf at GSCentral forums (gscentral.org)
 //http://board.gscentral.org/retro-hacking/53093.htm#post188949
@@ -204,31 +204,31 @@ u16 FreeBlocks(s32 chn)
 void GCIMakeHeader()
 {
 	/*** Clear out the cgi header ***/
-	memset(&gci, 0xff, sizeof(GCI) );
+	memset(&gci, 0xff, sizeof(card_direntry) );
 
 	/*** Populate ***/
 	memcpy(&gci.gamecode, &CardStatus.gamecode, 4);
 	memcpy(&gci.company, &CardStatus.company, 2);
 	gci.banner_fmt = CardStatus.banner_fmt;
 	memcpy(&gci.filename, &CardStatus.filename, CARD_FILENAMELEN);
-	gci.time = CardStatus.time;
+	gci.last_modified = CardStatus.time;
 	gci.icon_addr = CardStatus.icon_addr;
 	gci.icon_fmt = CardStatus.icon_fmt;
 	gci.icon_speed = CardStatus.icon_speed;
 
 	/*** Permission key has to be gotten separately. Make it 0 for normal privileges ***/
-	gci.unknown1 = permission;
+	gci.permission = permission;
 	/*** Who cares about copy counter ***/
-	gci.unknown2 = 0;
+	gci.copy_times = 0;
 
 	/*** Block index does not matter, it won't be restored at the same spot ***/
-	gci.index = 32;
+	gci.block = 32;
 
-	gci.filesize8 = (CardStatus.len / 8192);
+	gci.length = (CardStatus.len / 8192);
 	gci.comment_addr = CardStatus.comment_addr;
 
 	/*** Copy to head of buffer ***/
-	memcpy(FileBuffer, &gci, sizeof(GCI));
+	memcpy(FileBuffer, &gci, sizeof(card_direntry));
 }
 
 /****************************************************************************
@@ -240,18 +240,18 @@ void ExtractGCIHeader()
 {
 	/*** Clear out the status ***/
 	memset(&CardStatus, 0, sizeof(card_stat));
-	memcpy(&gci, FileBuffer, sizeof(GCI));
+	memcpy(&gci, FileBuffer, sizeof(card_direntry));
 
 	memcpy(&CardStatus.gamecode, &gci.gamecode, 4);
 	memcpy(&CardStatus.company, &gci.company, 2);
 	CardStatus.banner_fmt = gci.banner_fmt;
 	memcpy(&CardStatus.filename, &gci.filename, CARD_FILENAMELEN);
-	CardStatus.time = gci.time;
+	CardStatus.time = gci.last_modified;
 	CardStatus.icon_addr = gci.icon_addr;
 	CardStatus.icon_fmt = gci.icon_fmt;
 	CardStatus.icon_speed = gci.icon_speed;
-	permission = gci.unknown1;
-	CardStatus.len = gci.filesize8 * 8192;
+	permission = gci.permission;
+	CardStatus.len = gci.length * 8192;
 	CardStatus.comment_addr = gci.comment_addr;
 }
 
@@ -394,10 +394,10 @@ int CardReadFileHeader (int slot, int id)
 	GCIMakeHeader();
 #else
 	//get directory entry (same as gci header, but with all the data)
-	memset(&gci,0,sizeof(GCI));
+	memset(&gci,0,sizeof(card_direntry));
 	CARD_GetStatusEx(slot,CardFile.filenum,&gci);
 	/*** Copy to head of buffer ***/
-	memcpy(FileBuffer, &gci, sizeof(GCI));
+	memcpy(FileBuffer, &gci, sizeof(card_direntry));
 #endif
 
 	/*** Copy the file contents to the buffer ***/
@@ -583,10 +583,10 @@ int CardReadFile (int slot, int id)
 	GCIMakeHeader();
 #else
 	//get directory entry (same as gci header, but with all the data)
-	memset(&gci,0,sizeof(GCI));
+	memset(&gci,0,sizeof(card_direntry));
 	CARD_GetStatusEx(slot,CardFile.filenum,&gci);
 	/*** Copy to head of buffer ***/
-	memcpy(FileBuffer, &gci, sizeof(GCI));
+	memcpy(FileBuffer, &gci, sizeof(card_direntry));
 #endif
 
 	/*** Copy the file contents to the buffer ***/
@@ -634,7 +634,7 @@ int CardWriteFile (int slot)
 	memcpy(company, &gci.company, 2);
 	memcpy(gamecode, &gci.gamecode, 4);
 	memcpy(filename, &gci.filename, CARD_FILENAMELEN);
-	filelen = gci.filesize8 * 8192;
+	filelen = gci.length * 8192;
 
 	/*** Mount the card ***/
 	err = MountCard(slot);
