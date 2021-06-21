@@ -28,7 +28,6 @@
 #endif
 
 #include "mcard.h"
-#include "card.h"
 #include "raw.h"
 #include "sdsupp.h"
 #include "freetype.h"

@@ -75,7 +75,7 @@ extern u32 retraceCount;
 extern card_dir CardList[];
 extern u8 filelist[1024][1024];
 extern u32 maxfile;
-extern GCI gci;
+extern card_direntry gci;
 #define MAXFILEBUFFER (1024 * 2048)
 extern u8 FileBuffer[MAXFILEBUFFER] ATTRIBUTE_ALIGN (32);
 extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
@@ -969,7 +969,7 @@ void showSaveInfo(int sel)
 	y += 10;
 
 	// Compute date/time
-	u32 t = gci.time;  // seconds since jan 1, 2000
+	u32 t = gci.last_modified;  // seconds since jan 1, 2000
 	/*
 	//Raw time display
 	sprintf(txt, "D: %08X", t);
@@ -1025,22 +1025,22 @@ void showSaveInfo(int sel)
 	sprintf(txt, "Time: %02d:%02d:%02d", hour, min, sec);
 	DrawText(x, y, txt);
 	y += 20;
-	sprintf(txt, "Blocks: %02d (%d free)", gci.filesize8, FreeBlocks(MEM_CARD));
+	sprintf(txt, "Blocks: %02d (%d free)", gci.length, FreeBlocks(MEM_CARD));
 	DrawText(x, y, txt);
 	y += 20;
 	//M-> Cant' move the file //C->can't copy the file //P->public file //Most frecuent: xxP
 /*	sprintf(txt, "Perm: %s%s%s",
-	        (gci.unknown1 & 16) ? "M " : "x ",
-	        (gci.unknown1 & 8) ? "C " : "x ",
-	        (gci.unknown1 & 4) ? "P" : "x");
+	        (gci.permission & 16) ? "M " : "x ",
+	        (gci.permission & 8) ? "C " : "x ",
+	        (gci.permission & 4) ? "P" : "x");
 */
 	sprintf(txt, "Perm: %s%s%s",
-	        (gci.unknown1 & 16) ? "" : "Move | ",
-	        (gci.unknown1 & 8) ? "" : "Copy | ",
-	        (gci.unknown1 & 4) ? "Public" : "Private");
+	        (gci.permission & 16) ? "" : "Move | ",
+	        (gci.permission & 8) ? "" : "Copy | ",
+	        (gci.permission & 4) ? "Public" : "Private");
 	DrawText(x, y, txt);
 	y += 20;
-	sprintf(txt, "Copy Count: %02d", gci.unknown2);
+	sprintf(txt, "Copy Count: %02d", gci.copy_times);
 	DrawText(x, y, txt);
 
 #ifdef DEBUG_VALUES
