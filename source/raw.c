@@ -8,9 +8,32 @@
 #include <sys/dir.h>
 #include <dirent.h>
 #include <ogcsys.h>
+#include <ogc/libversion.h>
+#if (_V_MAJOR_ <= 2) && (_V_MINOR_ <= 2)
+#ifndef ogc_card_sync
+#define ogc_card_sync __card_sync
+#endif
+#ifndef ogc_card_read
+#define ogc_card_read __card_read
+#endif
+#ifndef ogc_card_sectorerase
+#define ogc_card_sectorerase __card_sectorerase
+#endif
+#ifndef ogc_card_write
+#define ogc_card_write __card_write
+#endif
+#include "card.h"
+extern s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
+extern s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
+extern s32 __card_sync(s32 chn);
+extern s32 __card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
+s32 CARD_GetFreeBlocks(s32 chn, u16* freeblocks);
+s32 CARD_GetSerialNo(s32 chn,u32 *serial1,u32 *serial2);
+#else
+#include <ogc/card.h>
+#endif
 
 #include "sdsupp.h"
-#include "card.h"
 #include "mcard.h"
 #include "gci.h"
 #include "freetype.h"
@@ -37,6 +60,12 @@ extern syssram* __SYS_LockSram();
 extern syssramex* __SYS_LockSramEx();
 extern u32 __SYS_UnlockSram(u32 write);
 extern u32 __SYS_UnlockSramEx(u32 write);
+#if (_V_MAJOR_ >= 2) && (_V_MINOR_ >= 3)
+extern s32 ogc_card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
+extern s32 ogc_card_sectorerase(s32 chn,u32 sector,cardcallback callback);
+extern s32 ogc_card_sync(s32 chn);
+extern s32 ogc_card_read(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback);
+#endif
 
 syssramex *sramex;
 u8 imageserial[12];
@@ -139,7 +168,7 @@ u64 Card_SerialNo(s32 slot)
 		if( (err != 0) || current_block >= 1)
 			break;
 		DCInvalidateRange(CardBuffer+SectorSize*current_block,SectorSize);
-		err = __card_read(slot,0,SectorSize,CardBuffer+SectorSize*current_block,_read_callback);
+		err = ogc_card_read(slot,0,SectorSize,CardBuffer+SectorSize*current_block,_read_callback);
 		if(err == 0)
 		{
 			while(read_data == 0)
@@ -290,7 +319,7 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 		if( (err != 0) || current_block >= BlockCount)
 			break;
 		DCInvalidateRange(CardBuffer+SectorSize*current_block,SectorSize);
-		err = __card_read(slot,SectorSize*current_block,SectorSize,CardBuffer+SectorSize*current_block,_read_callback);
+		err = ogc_card_read(slot,SectorSize*current_block,SectorSize,CardBuffer+SectorSize*current_block,_read_callback);
 		if(err == 0)
 		{
 			while(read_data == 0)
@@ -481,25 +510,25 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 				//DCStoreRange is called in card.c before actual writing to the card
 				DCStoreRange(CardBuffer+writen,write_len);
 				if(writen == 0 || !(writen%SectorSize)){
-					//s32 __card_sectorerase(s32 chn,u32 sector,cardcallback callback);
-					err = __card_sectorerase(slot,writen, _erase_callback);
+					//s32 ogc_card_sectorerase(s32 chn,u32 sector,cardcallback callback);
+					err = ogc_card_sectorerase(slot,writen, _erase_callback);
 					if(err == 0)
 					{
 						while(erase_data == 0)
 							usleep(1*1000); //sleep untill the erase is done which sadly takes alot longer then read
-						__card_sync(slot);
+						ogc_card_sync(slot);
 #ifdef DEBUGRAW
 //Check if the sector was erased (all set to 0).
 
-//Some unofficial memory cards apparently don't erase sectors when using __card_sectorerase(),
-//instead they can directly properly store the data calling just __card_write(),
+//Some unofficial memory cards apparently don't erase sectors when using ogc_card_sectorerase(),
+//instead they can directly properly store the data calling just ogc_card_write(),
 //so the following check will always fail, preventing restore for those cards, so I'm disabling
-//it and relying only on the __card_read() check done after writing the data.
+//it and relying only on the ogc_card_read() check done after writing the data.
 /*
 						memset(CheckBuffer,0,write_len);
 						DCInvalidateRange(CheckBuffer,write_len);
 						read_data = 0;
-						err = __card_read(slot,writen,write_len,CheckBuffer,_read_callback);
+						err = ogc_card_read(slot,writen,write_len,CheckBuffer,_read_callback);
 						while(read_data == 0)
 							usleep(1*1000);
 						
@@ -556,21 +585,21 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 						return -1;
 					}
 				}
-				//s32 __card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback)
-				err = __card_write(slot,writen,write_len,CardBuffer+writen,_write_callback);
+				//s32 ogc_card_write(s32 chn,u32 address,u32 block_len,void *buffer,cardcallback callback)
+				err = ogc_card_write(slot,writen,write_len,CardBuffer+writen,_write_callback);
 				if(err == 0)
 				{
 					while(write_data == 0)
 						usleep(1*1000); //sleep untill the write is done which sadly takes alot longer then read
-					__card_sync(slot);
+					ogc_card_sync(slot);
 
 #ifdef DEBUGRAW
 //Check the written data against the buffer
 					memset(CheckBuffer,0,write_len);
 					DCInvalidateRange(CheckBuffer,write_len);
 					read_data = 0;
-					//err = __card_read(slot,SectorSize*current_block,SectorSize,CheckBuffer,_read_callback);
-					err = __card_read(slot,writen,write_len,CheckBuffer,_read_callback);
+					//err = ogc_card_read(slot,SectorSize*current_block,SectorSize,CheckBuffer,_read_callback);
+					err = ogc_card_read(slot,writen,write_len,CheckBuffer,_read_callback);
 					while(read_data == 0)
 						usleep(1*1000);
 					
