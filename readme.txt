@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                    GCMM 1.5  by suloku                        ·oø×O0|
+|0O×øo·                    GCMM 1.5.1  by suloku                        ·oø×O0|
 |                      https://github.com/suloku/gcmm                       |
 |                   (old site: http://code.google.com/p/gcmm)               |
 |                          (Under GPL License)                              |
@@ -30,6 +30,12 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+[What's New 1.5.1 - October 10, 2021 - By suloku]
+* Merged DacoTaco's changes to make GCMM compatible with libogc 2.3.1, not needing to have a local copy of card.c/h
+* RAW read/restore functions use a lot less memory (lead to problems in recent builds with 2048 block memory card)
+* Reworked raw restore/read functions (they hopefully work correctly now for all memory cards)
+* Fixed bug in libogc's card.c preventing to correctly write from block 1024 onwards in 2048 block cards (right now needs modified libogc to compile and work, since we aren't using our own card.c/h anymore).
+
 [What's New 1.5 - april 21, 2021 - By suloku]
 * Merged carstene1ns changes to compile with latest libraries
 * Adopted libogc's latest changes to card.c, no longer needs system.h. Thanks tueidj for your patches all these years!

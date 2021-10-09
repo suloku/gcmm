@@ -2,8 +2,8 @@
 <app version="1">
 	<name>GCMM</name>
 	<coder>Suloku</coder>
-	<version>1.5</version>
-	<release_date>20210421000000</release_date>
+	<version>1.5.1</version>
+	<release_date>20211010000000</release_date>
 	<short_description>Memory Card Manager</short_description> 
 	<long_description>A memory card manager for Wii/GC.
 
@@ -14,5 +14,5 @@ F-Zero and Phantasy Star Online support by Ralf
 Folder and sorting support by dragonbane0
 
 Thanks to original mcbackup example code, Askot, dsbomb and justb.
-Special thanks to Costis, Masken, Tantric and tueidj.</long_description> 
+Special thanks to Costis, Masken, Tantric, tueidj, DacoTaco.</long_description> 
 </app>
