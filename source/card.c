@@ -1209,7 +1209,7 @@ static void __write_callback(s32 chn,s32 result)
 	if(ret>=0) {
 		file = card->curr_file;
 		if(file->len>=0) {
-			file->len = (card->sector_size-file->len);
+			file->len -= card->sector_size;
 			if(file->len<=0) {
 				dirblock = __card_getdirblock(card);
 				entry = &dirblock->entries[file->filenum];

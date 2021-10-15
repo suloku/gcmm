@@ -41,7 +41,7 @@
 //Comment FLASHIDCHECK to allow writing any image to any mc. This will corrupt official cards.
 #define FLASHIDCHECK
 
-const char appversion[] = "v1.5.1beta";
+const char appversion[] = "v1.5.1b1";
 int mode;
 int cancel;
 int doall;
@@ -60,6 +60,7 @@ extern u8 currFolder[260];
 extern int folderCount;
 extern int displaypath;
 
+u8 have_sd;
 u8 SD2SP2;
 s32 MEM_CARD = CARD_SLOTB;
 extern syssramex *sramex;
@@ -800,11 +801,10 @@ void SD_RawRestoreMode ()
 /****************************************************************************
 * Main
 ****************************************************************************/
-int main ()
+int main (int argc, char *argv[])
 {
 
-	int have_sd = 0;
-
+	have_sd = 0;
 
 #ifdef HW_DOL
 	int *psoid = (int *) 0x80001800;
@@ -815,40 +815,69 @@ int main ()
 	FT_Init ();		/*** Start FreeType ***/
 	ClearScreen();
 	ShowScreen();
+
 #ifdef HW_RVL
 	initialise_power();
 	have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT32 USB device?", "USB", "SD"));
 #else
 
-	u8 sd2sp2select = 0;
 	u32 p = PAD_ButtonsHeld(0);
 
 	//First try for a SD2SP2 device
-	SD2SP2 = 0;
-	__io_gcsd2.startup();
-	if (__io_gcsd2.isInserted())
+	SD2SP2 = 1;
+	u8 ask_device = 0;
+	if (argc > 1)
 	{
-		//If Z trigger or A button is held in startup, ask if sd2sp2 should be used
-		if ( p & PAD_BUTTON_A || p & PAD_TRIGGER_Z )
+		if (!strcmp(argv[1], "ask"))
 		{
-			writeStatusBar("Use SD2SP2 or SD Gecko?", "B = SD Gecko   :   A = SD2SP2");
-			WaitRelease();
-			SD2SP2 = WaitPromptChoice ("Use SD2SP2 or SD Gecko?", "SD Gecko", "SD2SP2");
-
+			ask_device = 1;
 		}
-		if(SD2SP2)
+		else if (!strcmp(argv[1], "sdgecko"))
 		{
-			if (!fatMountSimple ("fat", &__io_gcsd2))
-			{
-				WaitPrompt("SD2SP2 detected, but Error Mounting SD fat! Defaulting to SD Gecko");
-				SD2SP2 = 0;
-				
-			}else
-			{
-				have_sd = 1;
-			}
+			SD2SP2 = 0;
+			ask_device = 2;
 		}
 	}
+	//If Z trigger or A button is held in startup, ask for device to use, regardless of bootup
+	if ( p & PAD_BUTTON_A || p & PAD_TRIGGER_Z)
+	{
+		SD2SP2 = 1;
+		ask_device = 1;
+	}
+	
+	if (SD2SP2)
+	{
+		__io_gcsd2.startup();
+		if (__io_gcsd2.isInserted() && ask_device != 2)
+		{
+			if (ask_device == 1 )
+			{
+				writeStatusBar("Use SD2SP2 or SD Gecko?", "B = SD Gecko   :   A = SD2SP2");
+				WaitRelease();
+				SD2SP2 = WaitPromptChoice ("Use SD2SP2 or SD Gecko?", "SD Gecko", "SD2SP2");
+			}
+			if(SD2SP2)
+			{
+				if (!fatMountSimple ("fat", &__io_gcsd2))
+				{
+					WaitPrompt("SD2SP2 detected, but Error mounting fat! Trying SD Gecko");
+					SD2SP2 = 0;
+					
+				}else
+				{
+					writeStatusBar("SD2SP2 mounted!", ""); //Also refreshes screen and makes version string appear
+					//WaitPrompt("SD2SP2 mounted!");
+					have_sd = 1;
+				}
+			}
+		}
+		else
+		{
+			//WaitPrompt("SD2SP2 not detected!");
+			SD2SP2 = 0;
+		}
+	}
+
 	if (!SD2SP2) //Ask where SD gecko is located if no SD2SP2 is detected
 	{
 		//Returns 1 (memory card in slot B, sd gecko in slot A) if A button was pressed and 0 if B button was pressed
@@ -912,14 +941,15 @@ int main ()
 			break;
 		case 500 ://exit
 			ShowAction ("Exiting...");
-			deinitFAT();
 #ifdef HW_RVL
+			deinitFAT();
 			//if there's a loader stub load it, if not return to wii menu.
 			if (!!*(u32*)0x80001800) exit(1);
 			else SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0);
 #else
 			if (psoid[0] == PSOSDLOADID){
-				ShowAction ("Exiting...PSO");
+				deinitFAT();
+				ShowAction ("Exiting...STUB");
 				PSOReload ();
 			}
 			if (have_sd){
@@ -933,14 +963,19 @@ int main ()
 						u8 *dol = (u8*) memalign(32, size);
 						if (dol) {
 							fread(dol, 1, size, fp);
+							fclose(fp);
+							deinitFAT();
 							DOLtoARAM(dol, 0, NULL);
 						}
+						WaitPrompt ("Something went wrong with autoexec.dol. Press A to reboot.");
 						//We shouldn't reach this point
 						if (dol != NULL) free(dol);
 					}
-				fclose(fp);
+				fclose(fp);//We shouldn't reach here either
 				}
+				ShowAction ("Exiting...Couldn't open fat:/autoexec.dol. Rebooting.");
 			}
+			deinitFAT();
 			ShowAction ("Exiting...Reboot");
 			SYS_ResetSystem(SYS_HOTRESET, 0, 0);
 #endif

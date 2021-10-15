@@ -43,6 +43,10 @@ extern int cancel;
 extern int doall;
 extern int mode;
 extern s32 MEM_CARD;
+#ifdef HW_DOL
+extern u8 SD2SP2;
+extern have_sd;
+#endif
 
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
@@ -355,7 +359,12 @@ int SelectMode ()
 
 // DrawText(495,305,"choose your mode");
 	setfontsize(10);
-	DrawText(600,87,appversion);
+	DrawText(595,87,appversion);
+#ifdef HW_DOL
+	if (SD2SP2 && have_sd) DrawText(595,97, "SD2SP2");
+	else if (!SD2SP2 && have_sd) DrawText(595,97, "SDGecko");
+	else DrawText(595,97, "!Device");
+#endif
 	setfontsize (FONT_SIZE);
 	writeStatusBar("Choose your mode","");
 	ShowScreen();
