@@ -45,7 +45,7 @@ extern int mode;
 extern s32 MEM_CARD;
 #ifdef HW_DOL
 extern u8 SD2SP2;
-extern have_sd;
+extern int have_sd;
 #endif
 
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
@@ -137,8 +137,8 @@ int FT_Init ()
 	if (err)
 		return 1;
 
-	setfontsize (FONT_SIZE);
-	setfontcolour (0xff, 0xff, 0xff);
+	setfontsize(FONT_SIZE);
+	setfontcolour(COL_FONT);
 
 	slot = face->glyph;
 
@@ -256,7 +256,7 @@ void DrawText (int x, int y, char *text)
  * I got this from a pastebin, so thanks to whoever originally wrote it!
  */
 
-static unsigned int getcolour (u8 r1, u8 g1, u8 b1)
+unsigned int getcolour(u8 r1, u8 g1, u8 b1)
 {
 	int y1, cb1, cr1, y2, cb2, cr2, cb, cr;
 	u8 r2, g2, b2;
@@ -288,7 +288,7 @@ void setfontcolour (u8 r, u8 g, u8 b)
 {
 	u32 fontcolour;
 
-	fontcolour = getcolour (r, g, b);
+	fontcolour = getcolour(r, g, b);
 	fonthi = fontcolour & 0xffff0000;
 	fontlo = fontcolour & 0xffff;
 }
@@ -298,7 +298,7 @@ void setfontcolour (u8 r, u8 g, u8 b)
 ****************************************************************************/
 /*void ClearScreen (){
   whichfb ^= 1;
-  VIDEO_ClearFrameBuffer (vmode, xfb[whichfb], COLOR_BLACK);
+  VIDEO_ClearFrameBuffer (vmode, xfb[whichfb], COL_BLACK);
 }
 */
 /****************************************************************************
@@ -355,10 +355,11 @@ int SelectMode ()
 	ShowScreen ();*/
 	ClearScreen ();
 	//setfontcolour(84,174,211);
-// setfontcolour(28,28,28);
+	//setfontcolour(28,28,28);
 
 // DrawText(495,305,"choose your mode");
 	setfontsize(10);
+	setfontcolour(COL_FONT_STATUS);
 	DrawText(595,87,appversion);
 #ifdef HW_DOL
 	if (SD2SP2 && have_sd) DrawText(595,97, "SD2SP2");
@@ -737,7 +738,7 @@ void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b)
 	int i;
 
 	offset = (y * 320) + (startx >> 1);
-	colour = getcolour (r, g, b);
+	colour = getcolour(r, g, b);
 	width = (endx - startx) >> 1;
 
 	for (i = 0; i < width; i++)
@@ -746,12 +747,11 @@ void DrawLineFast (int startx, int endx, int y, u8 r, u8 g, u8 b)
 
 void showCardInfo(int sel){
 	//clear right pane, but just the card info
-	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(375, 165, 605, 390, bgcolor);
+	DrawBoxFilled(375, 165, 605, 390, COL_BG1);
 	//clear the right side just in case we went offscreen with previous comment
-	DrawVLine (606, 145, 390, CvtRGB(84,174,211,183,209,240));
-	DrawVLine (608, 145, 390, CvtRGB(230,232,250,242,243,252));
-	DrawBoxFilled(610, 145, 640, 390, getcolour(255,255,255));
+	DrawVLine (606, 145, 390, COL_BG2);
+	DrawVLine (608, 145, 390, COL_BG2);
+	DrawBoxFilled(610, 145, 640, 390, COL_BG2);
 
 	int y = 190, x = 378;
 	int err;
@@ -769,11 +769,11 @@ void showCardInfo(int sel){
 		y += 70;
 		
 		//Simple folder "icon"
-		DrawBoxFilled(468+2, 174+20, (468+40), (174+37)+20, getcolour(0,0,0));
-		DrawBoxFilled(468+2+2, 174+2+20, (468+40)-2, (174+37)-2+20, getcolour(255,255,0));
-		DrawBoxFilled(468+2, 174+20, (468+40), (174+10)+20, getcolour(0,0,0));
-		DrawBoxFilled(468+2+2, 174+2+20, (468+40-22)-2, (174+10-1)-2+20, getcolour(255,255,0));
-		DrawBoxFilled((468+40-22)+2, 174+20, (468+40), (174+10-1)-2+20, getcolour(84,174,211));
+		DrawBoxFilled(468+2, 174+20, (468+40), (174+37)+20, COL_BLACK);
+		DrawBoxFilled(468+2+2, 174+2+20, (468+40)-2, (174+37)-2+20, COL_YELLOW);
+		DrawBoxFilled(468+2, 174+20, (468+40), (174+10)+20, COL_BLACK);
+		DrawBoxFilled(468+2+2, 174+2+20, (468+40-22)-2, (174+10-1)-2+20, COL_YELLOW);
+		DrawBoxFilled((468+40-22)+2, 174+20, (468+40), (174+10-1)-2+20, COL_BG1);
 	}
 	else
 	{
@@ -855,12 +855,11 @@ void showSaveInfo(int sel)
 	int isFolder = 0;
 
 	//clear right pane, but just the save info
-	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(375, 145, 605, 390, bgcolor);
+	DrawBoxFilled(375, 145, 605, 390, COL_BG1);
 	//clear the right side just in case we went offscreen with previous comment
-	DrawVLine (606, 145, 390, CvtRGB(84,174,211,183,209,240));
-	DrawVLine (608, 145, 390, CvtRGB(230,232,250,242,243,252));
-	DrawBoxFilled(610, 145, 640, 390, getcolour(255,255,255));
+	DrawVLine (606, 145, 390, COL_BG2);
+	DrawVLine (608, 145, 390, COL_BG2);
+	DrawBoxFilled(610, 145, 640, 390, COL_BG2);
 
 	// read file, display some more info
 	// TODO: only read the necessary header + comment, display banner and icon files
@@ -898,9 +897,9 @@ void showSaveInfo(int sel)
 	//Draw nice gradient background for banner and icon
 	if((isFolder == 0 && SDCARD_GetBannerFmt(gci.banner_fmt) == 1) || (isFolder == 0 && SDCARD_GetBannerFmt(gci.banner_fmt) == 2)){
 	    //Box for icon+banner
-		DrawHLine (410, 410+160, 172, getcolour (255,255,255));
-		DrawBox (410, 173, 410+160, 173+39, getcolour (255,255,255));
-		DrawHLine (410, 410+160, 174+39, getcolour (255,255,255));
+		DrawHLine (410, 410+160, 172, COL_BG2);
+		DrawBox (410, 173, 410+160, 173+39, COL_BG2);
+		DrawHLine (410, 410+160, 174+39, COL_BG2);
 		DrawBoxFilledGradient(412, 174, (410+158), (174+37), BLUECOL, PURPLECOL, LOCATION);
 	}else
 	{
@@ -908,19 +907,19 @@ void showSaveInfo(int sel)
 		if (isFolder == 1)
 		{
 			//Simple folder "icon"
-			DrawBoxFilled(468+2, 174, (468+40), (174+37), getcolour(0,0,0));
-			DrawBoxFilled(468+2+2, 174+2, (468+40)-2, (174+37)-2, getcolour(255,255,0));
-			DrawBoxFilled(468+2, 174, (468+40), (174+10), getcolour(0,0,0));
-			DrawBoxFilled(468+2+2, 174+2, (468+40-22)-2, (174+10-1)-2, getcolour(255,255,0));
-			DrawBoxFilled((468+40-22)+2, 174, (468+40), (174+10-1)-2, getcolour(84,174,211));
-			//DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), getcolour(255,255,0), getcolour(255,255,0), LOCATION);
+			DrawBoxFilled(468+2, 174, (468+40), (174+37), COL_BLACK);
+			DrawBoxFilled(468+2+2, 174+2, (468+40)-2, (174+37)-2, COL_YELLOW);
+			DrawBoxFilled(468+2, 174, (468+40), (174+10), COL_BLACK);
+			DrawBoxFilled(468+2+2, 174+2, (468+40-22)-2, (174+10-1)-2, COL_YELLOW);
+			DrawBoxFilled((468+40-22)+2, 174, (468+40), (174+10-1)-2, COL_BG1);
+			//DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), COL_YELLOW, COL_YELLOW, LOCATION);
 		}
 		else
 		{
 			//Box for icon
-			DrawHLine (468, 468+42, 172, getcolour (255,255,255));
-			DrawBox (468, 173, 468+42, 173+39, getcolour (255,255,255));
-			DrawHLine (468, 468+42, 174+39, getcolour (255,255,255));
+			DrawHLine (468, 468+42, 172, COL_BG2);
+			DrawBox (468, 173, 468+42, 173+39, COL_BG2);
+			DrawHLine (468, 468+42, 174+39, COL_BG2);
 			//Gradient
 			DrawBoxFilledGradient(468+2, 174, (468+40), (174+37), BLUECOL, PURPLECOL, LOCATION);
 		}
@@ -1088,13 +1087,14 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		if (displaypath)
 		{
 			//Draw current folder
-			DrawBoxFilled(30, 55, 30+330, 50+16, getcolour(255, 255, 255));
+			DrawBoxFilled(30, 55, 30+330, 50+16, COL_BG2);
 			setfontsize (10);
+			setfontcolour(COL_FONT);
 			sprintf (folder, "fat:/%s/", currFolder);
 			DrawText(40, 66, folder);
 		}
-		setfontsize (14);
-		setfontcolour (0xff, 0xff, 0xff);
+		setfontsize(14);
+		setfontcolour(COL_FONT);
 		//Do a little math (480 - (16*20+40))/2
 		//(ypos = 60 seems perfect given the current background bmp)
 		ypos = (screenheight - (PAGESIZE * 20+40)) >> 1;
@@ -1109,10 +1109,12 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 			
 			if(isdir_sd(folder) == 1)
 			{
+				setfontcolour(COL_FONT_FOLDER);
 				sprintf(name, "[Folder]%s", (char*)filelist[i]);
 			}
 			else
 			{
+				setfontcolour(COL_FONT);
 				sprintf(name, "%s", (char*)filelist[i]);
 			}
 			
@@ -1123,17 +1125,17 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 				/*** Highlighted text entry ***/
 				for (w = 0; w < 20; w++){
 					//Draw white lines to highlight this area.
-					DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, 0xff, 0xff, 0xff);
+					DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, COL_HIGHLIGHT);
 				}
-				setfontcolour (28, 28, 28);
+				setfontcolour(COL_FONT_HIGHLIGHT);
 				DrawText (35, (j * 20) + ypos, text);
-				setfontcolour (0xff, 0xff, 0xff);
+				setfontcolour(COL_FONT);
 			}
 			else{
 				/*** Normal entry ***/
 				//****************
 				for (w = 0; w < 20; w++){
-					DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, 84, 174,211);
+					DrawLineFast (35, 330, (j * 20) + (ypos - 14) + w, COL_SELECTOR);
 				//***********************************************************
 				}
 				DrawText (35, (j * 20) + ypos, text);
@@ -1141,7 +1143,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 			j++;
 		}
 		//set black font - info on right side of screen is printed in showSaveInfo
-		setfontcolour (28, 28, 28);
+		setfontcolour(COL_FONT);
 		if (saveinfo){
 			showSaveInfo(selection);
 		}else if (!saveinfo){
@@ -1153,40 +1155,44 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		setfontsize (14);
 		ypos = (screenheight - (PAGESIZE * 20+40)) >> 1;
 		ypos += 26;
-		setfontcolour (0xff, 0xff, 0xff);
+		setfontcolour(COL_FONT);
 		
 		//user just pressed up, down, left or right, upordown holds the correction needded
 		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection+upordown]);
 	
 		if(isdir_sd(folder) == 1)
 		{
+			setfontcolour(COL_FONT_FOLDER);
 			sprintf(name, "[Folder]%s", (char*)filelist[selection+upordown]);
 		}
 		else
 		{
+			setfontcolour(COL_FONT);
 			sprintf(name, "%s", (char*)filelist[selection+upordown]);
 		}
 		
 		strncpy (text, name, textlen);
 		text[textlen] = 0;
 		for (w = 0; w < 20; w++){
-			DrawLineFast (35, 330, (((selection-offset)+upordown) * 20) + (ypos - 14) + w, 84, 174,211);
+			DrawLineFast (35, 330, (((selection-offset)+upordown) * 20) + (ypos - 14) + w, COL_SELECTOR);
 		}
 		DrawText (35, (((selection-offset)+upordown) * 20) + ypos, text);
 		//Important to call ShowScreen here if we want the redraw to
 		//appear faster - without it the highlight box glides too much
 		ShowScreen();
-		setfontcolour (28, 28, 28);
+		setfontcolour(COL_FONT);
 		
 		
 		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection]);
 	
 		if(isdir_sd(folder) == 1)
 		{
+			setfontcolour(COL_FONT_FOLDER);
 			sprintf(name, "[Folder]%s", (char*)filelist[selection]);
 		}
 		else
 		{
+			setfontcolour(COL_FONT);
 			sprintf(name, "%s", (char*)filelist[selection]);
 		}
 		
@@ -1195,9 +1201,11 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		text[textlen] = 0;
 		//the current spot is always highlighted
 		for (w = 0; w < 20; w++){
-			DrawLineFast (35, 330, ((selection-offset) * 20) + (ypos - 14) + w, 0xff, 0xff, 0xff);
+			DrawLineFast (35, 330, ((selection-offset) * 20) + (ypos - 14) + w, COL_HIGHLIGHT);
 		}
+		setfontcolour(COL_FONT_HIGHLIGHT);
 		DrawText (35, ((selection-offset) * 20) + ypos, text);
+		setfontcolour(COL_FONT);
 		if (saveinfo){
 			showSaveInfo(selection);
 		}else if (!saveinfo){
@@ -1207,6 +1215,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 	//Draw the page we are on
 	sprintf (text, "%02.0f/%02.0f", (((selection)/PAGESIZE)+0.9), (((maxfile)/PAGESIZE)+0.9) );
 	setfontsize(10);
+	if (selection ==0 || !(selection%PAGESIZE)) setfontcolour(COL_FONT_HIGHLIGHT);
 	DrawText(298, 80, text);
 	setfontsize(14);
 	//Need this to show info update from showSaveInfo
@@ -1550,24 +1559,21 @@ int ShowSelector (int saveinfo)
 
 void writeStatusBar( char *line1, char *line2)
 {
-	int bgcolor = getcolour(0xff,0xff,0xff);
-	DrawBoxFilled(0, 404, vmode->fbWidth-1, vmode->xfbHeight-1, bgcolor);
+	DrawBoxFilled(0, 404, vmode->fbWidth-1, vmode->xfbHeight-1, COL_BG2);
 	//setfontcolour(84,174,211);
-	setfontcolour(28,28,28);
+	setfontcolour(COL_FONT_STATUS);
 	DrawText(40, 425, line1);
 	DrawText(40, 450, line2);
 }
 
 void clearLeftPane()
 {
-	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(34, 72, 333, 392, bgcolor);
+	DrawBoxFilled(34, 72, 333, 392, COL_BG1);
 }
 
 void clearRightPane()
 {
-	int bgcolor = getcolour(84,174,211);
-	DrawBoxFilled(376, 112, 605, 395, bgcolor);
+	DrawBoxFilled(376, 112, 605, 395, COL_BG1);
 }
 
 void DrawHLine (int x1, int x2, int y, int color)

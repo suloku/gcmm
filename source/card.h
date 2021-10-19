@@ -55,7 +55,7 @@ distribution.
 #define CARD_WORKAREA				(5*8*1024)	/*!< minimum size of the workarea passed to Mount[Async]() */
 #define CARD_READSIZE				512			/*!< minimum size of block to read from memory card */
 #define CARD_FILENAMELEN			32			/*!< maximum filename length */
-#define CARD_MAXFILES				128			/*!< maximum number of files on the memory card */
+#define CARD_MAXFILES				127			/*!< maximum number of files on the memory card */
 
 /*! \addtogroup card_errors Memory card error codes
  * @{
@@ -152,7 +152,7 @@ typedef struct _card_dir {
       u32 fileno;
 	  u32 filelen;
 	  u8 permissions;
-      u8 filename[CARD_FILENAMELEN];
+      char filename[CARD_FILENAMELEN];
       u8 gamecode[4];
       u8 company[2];
       bool showall;
@@ -176,7 +176,7 @@ typedef struct _card_dir {
 \param offset_data offset to additional data.
 */
 typedef struct _card_stat {
-	u8 filename[CARD_FILENAMELEN];
+	char filename[CARD_FILENAMELEN];
 	u32 len;
 	u32 time;		//time since 1970 in seconds
 	u8 gamecode[4];
@@ -334,7 +334,7 @@ s32 CARD_Close(card_file *file);
 \brief Creates a new file with the given filename and fills in the fileinformations. Synchronous version.
 \param[in] chn CARD slot
 \param[in] filename name of the file to create.
-\param[in] size size of the newly created file.
+\param[in] size size of the newly created file. This must be a multiple of the memory card's sector size.
 \param[out] file pointer to the card_file structure. It receives the fileinformations for later usage.
 
 \return \ref card_errors "card error codes"
@@ -346,7 +346,7 @@ s32 CARD_Create(s32 chn,const char *filename,u32 size,card_file *file);
 \brief Creates a new file with the given filename and fills in the fileinformations. This function returns immediately. Asynchronous version.
 \param[in] chn CARD slot
 \param[in] filename name of the file to create.
-\param[in] size size of the newly created file.
+\param[in] size size of the newly created file. This must be a multiple of the memory card's sector size.
 \param[out] file pointer to the card_file structure. It receives the fileinformations for later usage.
 \param[in] callback pointer to a callback function. This callback will be called when the create process has finished.
 

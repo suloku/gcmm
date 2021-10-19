@@ -28,7 +28,9 @@ INCLUDES	:=
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DDEVKITPPCVER=$(DKV)
+THEME = -DLIGHT_MODE
+
+CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DDEVKITPPCVER=$(DKV) $(THEME)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
