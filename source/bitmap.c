@@ -18,7 +18,23 @@
 #include "freetype.h"
 #include "gci.h"
 
-#include "background_bmp.h"
+#ifdef DARK_MODE
+	#include "bg_dark_bmp.h"
+#else
+	#include "bg_bmp.h"	
+#endif
+
+#ifdef HW_DOL
+extern u8 SD2SP2;
+extern int have_sd;
+	#ifdef DARK_MODE
+		#include "bg_dark_gcload_bmp.h"
+		#include "bg_dark_sd2sp2_bmp.h"
+	#else
+		#include "bg_gcload_bmp.h"
+		#include "bg_sd2sp2_bmp.h"
+	#endif
+#endif
 
 extern card_direntry gci;
 //*extern GXRModeObj *vmode; /*** Graphics Mode Object ***/
@@ -150,9 +166,10 @@ u32 ShowBMP(u8 * bmpfile) {
     /*** Move to NEXT framebuffer ***/
     whichfb ^= 1;
 
+	//Move background in the "device selection" screen to center the left pane with the GC memory card logo
 	if (firstcall)
 	{
-		DrawBoxFilled(0,0,vmode->fbWidth-1,vmode->xfbHeight-1,0xFF80FF80);	
+		DrawBoxFilled(0,0,vmode->fbWidth-1,vmode->xfbHeight-1, COL_BG2);	
 		for (rows = 0; rows < height; rows++) {
 			for (cols = 0; cols < (fbwidth >> 1); cols++) {
 				if (rows < 64 || rows > 398 || cols < (31>>1) || cols > (341>>1))
@@ -289,5 +306,27 @@ void ShowIcon(u8 *icon) {
 }
 
 void ClearScreen() {
-    ShowBMP((u8*) background_bmp);
+
+#ifdef HW_DOL
+
+	#ifdef DARK_MODE
+		if (SD2SP2 == 1 && have_sd) ShowBMP((u8*) bg_dark_sd2sp2_bmp);
+		else if (SD2SP2 == 2 && have_sd) ShowBMP((u8*) bg_dark_gcload_bmp);
+		else 
+		ShowBMP((u8*) bg_dark_bmp);
+	#else
+		if (SD2SP2 == 1 && have_sd) ShowBMP((u8*) bg_sd2sp2_bmp);
+		else if (SD2SP2 == 2 && have_sd) ShowBMP((u8*) bg_gcload_bmp);
+		else 
+		ShowBMP((u8*) bg_bmp);
+	#endif
+
+#else
+	#ifdef DARK_MODE
+		ShowBMP((u8*) bg_dark_bmp);
+	#else
+		ShowBMP((u8*) bg_bmp);
+	#endif
+#endif
+
 }
