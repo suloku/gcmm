@@ -1,5 +1,5 @@
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
-|0O×øo·                    GCMM 1.5.1  by suloku                        ·oø×O0|
+|0O×øo·                    GCMM 1.5.2  by suloku                        ·oø×O0|
 |                      https://github.com/suloku/gcmm                       |
 |                   (old site: http://code.google.com/p/gcmm)               |
 |                          (Under GPL License)                              |
@@ -22,7 +22,7 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 * Format the memory card
 * Wiimote and GameCube controller support
 * Power button support
-* Front SD and FAT32 USB device (wii) and SDGecko/SD2SP2 (gamecube) support
+* Front SD, FAT32 USB device (wii), SDGecko (wii/gamecube), SD2SP2 and GCLoader (gamecube) support
 * Shows savegame information, alongside animated Icon and Banner!
 * A (somewhat) nice UI
 * Open Source!
@@ -30,6 +30,21 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
+[What's New 1.5.2 - November 03, 2021 - By suloku]
+* Fixed exit/reboot secuence (finally)
+* Several card fixes thanks to Extrems and libogc2!
+* SD2SP2 fix
+- Changed to libogc2 to fix bug in sd2sp2 mounting when it has already been mounted once (even on another dol file) without rebooting. (will still compile with libogc)
+- Using custom card.c and card.h (again) since libogc2 is missing some functions
+* Added device selector. Press 1/R button to access it.
+* Devices can be swapped without rebooting GCMM now. When running device selector follow on screen instructions to know when you can safely insert/remove a device.
+* SDGecko support for Wii mode.
+* GCLoader support for Gamecube mode.
+* Show current device (wiisd/wiiusb/sdgecko/sd2sp2/gcloader/no device) under version string
+* Support for command line paramenters in both wii and gamecube (use Swiis cli files for gamecube). Read more in cli_readme.txt. Pre-made cli files are included.
+* WII/GC: added Dark mode theme (as a separate dol file).
+* Background is changed depending on fat device being used (gamecube)
+
 [What's New 1.5.1 - October 10, 2021 - By suloku]
 * Merged DacoTaco's changes to make GCMM compatible with libogc 2.3.1, not needing to have a local copy of card.c/h
 * RAW read/restore functions use a lot less memory (lead to problems in recent builds with 2048 block memory card)
