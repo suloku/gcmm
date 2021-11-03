@@ -36,8 +36,8 @@ void initialise_power() ;
 	#define COL_BG2 getcolour(255,255,255)
 	#define COL_SELECTOR 84,174,211 //Should be the same as BG1
 	#define COL_FONT 28,28,28
-	#define COL_FONT_FOLDER 200,200,20
-	#define COL_FONT_HIGHLIGHT 255,255,255
+	#define COL_FONT_FOLDER 255,255,255
+	#define COL_FONT_HIGHLIGHT 28,28,28
 	#define COL_FONT_STATUS COL_FONT
 #endif
 

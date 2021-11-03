@@ -17,6 +17,7 @@
 #include "bitmap.h"
 #include "freetype.h"
 #include "gci.h"
+#include "sdsupp.h"
 
 #ifdef DARK_MODE
 	#include "bg_dark_bmp.h"
@@ -25,8 +26,8 @@
 #endif
 
 #ifdef HW_DOL
-extern u8 SD2SP2;
-extern int have_sd;
+extern u8 CUR_DEVICE;
+extern bool have_sd;
 	#ifdef DARK_MODE
 		#include "bg_dark_gcload_bmp.h"
 		#include "bg_dark_sd2sp2_bmp.h"
@@ -35,6 +36,7 @@ extern int have_sd;
 		#include "bg_sd2sp2_bmp.h"
 	#endif
 #endif
+extern u8 selector_flag;
 
 extern card_direntry gci;
 //*extern GXRModeObj *vmode; /*** Graphics Mode Object ***/
@@ -118,7 +120,6 @@ u32 ShowBMP(u8 * bmpfile) {
     u8 *bgr;
     u32 fboffset;
     u32 rows, cols;
-	static u8 firstcall = 1;
 
     bitmap = (WINBITMAP *) bmpfile;
 
@@ -165,9 +166,9 @@ u32 ShowBMP(u8 * bmpfile) {
 
     /*** Move to NEXT framebuffer ***/
     whichfb ^= 1;
-
+	
 	//Move background in the "device selection" screen to center the left pane with the GC memory card logo
-	if (firstcall)
+	if (selector_flag)
 	{
 		DrawBoxFilled(0,0,vmode->fbWidth-1,vmode->xfbHeight-1, COL_BG2);	
 		for (rows = 0; rows < height; rows++) {
@@ -179,7 +180,7 @@ u32 ShowBMP(u8 * bmpfile) {
 				else
 				{
 					xfb[whichfb][fboffset-(320*20) + (66)+cols] =CvtRGB (bgr[2], bgr[1], bgr[0],
-							bgr[5], bgr[4], bgr[3]);				
+							bgr[5], bgr[4], bgr[3]);		
 				}
 
 				bgr += 6;
@@ -201,10 +202,6 @@ u32 ShowBMP(u8 * bmpfile) {
 			fboffset -= 320; /*** Go up one row ***/
 
 		} /*** Outer row loop ***/
-	}
-	if (firstcall)
-	{
-		firstcall = 0;
 	}
 
     /*** Setup the video to display this picture ***/
@@ -310,13 +307,13 @@ void ClearScreen() {
 #ifdef HW_DOL
 
 	#ifdef DARK_MODE
-		if (SD2SP2 == 1 && have_sd) ShowBMP((u8*) bg_dark_sd2sp2_bmp);
-		else if (SD2SP2 == 2 && have_sd) ShowBMP((u8*) bg_dark_gcload_bmp);
+		if (CUR_DEVICE == DEV_GCSDC && have_sd) ShowBMP((u8*) bg_dark_sd2sp2_bmp);
+		else if (CUR_DEVICE == DEV_GCODE && have_sd) ShowBMP((u8*) bg_dark_gcload_bmp);
 		else 
 		ShowBMP((u8*) bg_dark_bmp);
 	#else
-		if (SD2SP2 == 1 && have_sd) ShowBMP((u8*) bg_sd2sp2_bmp);
-		else if (SD2SP2 == 2 && have_sd) ShowBMP((u8*) bg_gcload_bmp);
+		if (CUR_DEVICE == DEV_GCSDC && have_sd) ShowBMP((u8*) bg_sd2sp2_bmp);
+		else if (CUR_DEVICE == DEV_GCODE && have_sd) ShowBMP((u8*) bg_gcload_bmp);
 		else 
 		ShowBMP((u8*) bg_bmp);
 	#endif

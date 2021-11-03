@@ -55,6 +55,7 @@ Header cardheader;
 
 extern u8 currFolder[260];
 extern int folderCount;
+extern char fatpath[4];
 
 extern syssram* __SYS_LockSram();
 extern syssramex* __SYS_LockSramEx();
@@ -292,14 +293,14 @@ s8 BackupRawImage(s32 slot, s32 *bytes_writen )
 	char name[64];
 	int filenumber = 1;
 	
-	sprintf (filename, "fat:/%s", MCSAVES);
+	sprintf (filename, "%s:/%s", fatpath, MCSAVES);
 	mkdir(filename, S_IREAD | S_IWRITE);	
 	
 	time2name(name);
-	sprintf (filename, "fat:/%s/%04db_%s.raw", MCSAVES, BlockCount-5, name);
+	sprintf (filename, "%s:/%s/%04db_%s.raw", fatpath, MCSAVES, BlockCount-5, name);
 	//not really needed because the filename has seconds in it and the same filename will "never" happen
 	while (file_exists(filename)){
-		sprintf (filename, "fat:/%s/%04db_%s_%02d.raw", MCSAVES, BlockCount-5, name, filenumber);
+		sprintf (filename, "%s:/%s/%04db_%s_%02d.raw", fatpath, MCSAVES, BlockCount-5, name, filenumber);
 		filenumber++;
 	}	
 	dumpFd = fopen(filename,"wb");
@@ -429,7 +430,7 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 
 
 	/*** Make fullpath filename ***/
-	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
+	sprintf (filename, "%s:/%s/%s", fatpath, currFolder, sdfilename);
 
 	/*** Open the SD Card file ***/
 	dumpFd = fopen ( filename , "rb" );
@@ -513,8 +514,10 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 				//fclose(dumpFd);
 /*
 //Test code to see if raw image is correctly read
+				char testfile[64];
+				sprintf(testfile, "%s:/fatread.bin", fatpath);
 				FILE *test = 0;
-				test = fopen ( "fat:/fatread.bin" , "wb" );
+				test = fopen ( testfile , "wb" );
 				fwrite (CardBuffer , 1 , SectorSize , test);
 				fclose (test);
 //Testcode end
@@ -570,8 +573,9 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 								else
 								{
 									//Uncomment to dump contents that where read
-									
-									FILE* dump = fopen("fat:/sectcheck_dump.bin","wb");
+									char dumpfile[64];
+									sprintf(dumpfile, "%s:/setcheck_dump.bin", fatpath);
+									FILE* dump = fopen(dumpfile,"wb");
 									fwrite(CheckBuffer,1,write_len,dump);
 									fclose(dump);
 									
@@ -645,7 +649,9 @@ s8 RestoreRawImage( s32 slot, char *sdfilename, s32 *bytes_writen )
 							//printf("different data. writing to SD (0x%08X), error %d\n",*check,CardError);
 
 							//Uncomment to dump contents that where read
-							FILE* dump = fopen("fat:/check_dump.bin","wb");
+							char checkdump[64];
+							sprintf(checkdump, "%s:/check_dump.bin", fatpath);
+							FILE* dump = fopen(checkdump,"wb");
 							fwrite(CheckBuffer,1,write_len,dump);
 							fclose(dump);
 							

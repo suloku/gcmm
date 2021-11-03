@@ -47,6 +47,7 @@ extern int OFFSET;
 
 extern u8 currFolder[260];
 extern int folderCount;
+extern char fatpath[4];
 
 bool file_exists(const char * filename)
 {
@@ -83,17 +84,17 @@ int SDSaveMCImage ()
 	memcpy (gamecode, &thisgci.gamecode, 4);
 	memcpy (tfile, &thisgci.filename, CARD_FILENAMELEN);
 
-	sprintf (filename, "fat:/%s", MCSAVES);
+	sprintf (filename, "%s:/%s", fatpath, MCSAVES);
 
 	mkdir(filename, S_IREAD | S_IWRITE);
 
-	sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, tfile, filenumber);
+	sprintf (filename, "%s:/%s/%s-%s-%s_%02d.gci", fatpath, MCSAVES, company, gamecode, tfile, filenumber);
 
 	//Lets try if there's already a savegame (if it exists its name is legal, so theoretically the illegal name check will pass
 	//Illegal savegame should report as nonexisting...
 	//We will number the files
 	while (file_exists(filename)){
-		sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, tfile, filenumber);
+		sprintf (filename, "%s:/%s/%s-%s-%s_%02d.gci", fatpath, MCSAVES, company, gamecode, tfile, filenumber);
 		filenumber++;
 	}
 
@@ -107,11 +108,11 @@ int SDSaveMCImage ()
 		if (handle <= 0)
 		{
 			// couldn't open file, probably either card full or filename illegal; let's assume illegal filename and retry
-			sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, "illegal_name", filenumber);
+			sprintf (filename, "%s:/%s/%s-%s-%s_%02d.gci", fatpath, MCSAVES, company, gamecode, "illegal_name", filenumber);
 			//let's see again if there aren't any saves already...
 			filenumber = 1;
 			while (file_exists(filename)){
-				sprintf (filename, "fat:/%s/%s-%s-%s_%02d.gci", MCSAVES, company, gamecode, "illegal_name", filenumber);
+				sprintf (filename, "%s:/%s/%s-%s-%s_%02d.gci", fatpath, MCSAVES, company, gamecode, "illegal_name", filenumber);
 				filenumber++;
 			}
 			//filename[128] = 0;
@@ -176,7 +177,7 @@ int SDLoadMCImage(char *sdfilename)
 
 	/*** Make fullpath filename ***/
 	//sprintf (filename, "dev0:\\%s\\%s", MCSAVES, sdfilename);
-	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
+	sprintf (filename, "%s:/%s/%s", fatpath, currFolder, sdfilename);
 
 	//SDCARD_Init ();
 
@@ -265,7 +266,7 @@ int SDLoadMCImageHeader(char *sdfilename)
 	memset (CommentBuffer, 0, 64);
 
 	/*** Make fullpath filename ***/
-	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
+	sprintf (filename, "%s:/%s/%s", fatpath, currFolder, sdfilename);
 
 
 	/*** Open the SD Card file ***/
@@ -511,7 +512,7 @@ int SDLoadCardImageHeader(char *sdfilename)
 	memset (&cardheader, 0, sizeof(Header));
 
 	/*** Make fullpath filename ***/
-	sprintf (filename, "fat:/%s/%s", currFolder, sdfilename);
+	sprintf (filename, "%s:/%s/%s", fatpath, currFolder, sdfilename);
 
 	/*** Open the SD Card file ***/
 	handle = fopen ( filename , "rb" );
@@ -614,7 +615,7 @@ int SDGetFileList(int mode)
 	int dirCount = 0;
 
 	char filename[1024];
-	sprintf (filename, "fat:/%s/", currFolder);
+	sprintf (filename, "%s:/%s/", fatpath, currFolder);
 
 
 	//Add Folders

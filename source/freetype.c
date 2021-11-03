@@ -43,10 +43,7 @@ extern int cancel;
 extern int doall;
 extern int mode;
 extern s32 MEM_CARD;
-#ifdef HW_DOL
-extern u8 SD2SP2;
-extern int have_sd;
-#endif
+extern u8 CUR_DEVICE;
 
 extern u16 bannerdata[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
 extern u8 bannerdataCI[CARD_BANNER_W*CARD_BANNER_H] ATTRIBUTE_ALIGN (32);
@@ -87,6 +84,7 @@ extern u8 CommentBuffer[64] ATTRIBUTE_ALIGN (32);
 extern u8 currFolder[260];
 extern int folderCount;
 extern int displaypath;
+extern char fatpath[4];
 
 #define PAGESIZE 16
 
@@ -353,7 +351,7 @@ int SelectMode ()
 	DrawText (-1, ypos + 60, "Press X for SD CARD RESTORE mode");
 	DrawText (-1, ypos + 80, "Press Z for SD/PSO Reload");
 	ShowScreen ();*/
-	ClearScreen ();
+	//ClearScreen ();
 	//setfontcolour(84,174,211);
 	//setfontcolour(28,28,28);
 
@@ -361,11 +359,34 @@ int SelectMode ()
 	setfontsize(10);
 	setfontcolour(COL_FONT_STATUS);
 	DrawText(595,87,appversion);
-#ifdef HW_DOL
-	if (SD2SP2 && have_sd) DrawText(595,97, "SD2SP2");
-	else if (!SD2SP2 && have_sd) DrawText(595,97, "SDGecko");
-	else DrawText(595,97, "!Device");
-#endif
+	
+	switch(CUR_DEVICE)
+	{
+		case DEV_ND:
+			DrawText(595,97, "!Device");
+			break;
+		case DEV_GCSDA:
+			DrawText(595,97, "GeckoA");
+			break;
+		case DEV_GCSDB:
+			DrawText(595,97, "GeckoB");
+			break;
+		case DEV_GCSDC:
+			DrawText(595,97, "SD2SP2");
+			break;
+		case DEV_GCODE:
+			DrawText(595,97, "GCLoader");
+			break;
+		case DEV_WIISD:
+			DrawText(595,97, "Wii SD");
+			break;
+		case DEV_WIIUSB:
+			DrawText(595,97, "Wii USB");
+			break;
+		default:
+			break;
+	}
+
 	setfontsize (FONT_SIZE);
 	writeStatusBar("Choose your mode","");
 	ShowScreen();
@@ -374,7 +395,7 @@ int SelectMode ()
 
 	for (;;)
 	{
-
+/*
 		if (PAD_ButtonsHeld (0) & PAD_BUTTON_A)
 		{
 			while ((PAD_ButtonsDown (0) & PAD_BUTTON_A))
@@ -383,6 +404,7 @@ int SelectMode ()
 			}
 			return 100;
 		}
+*/
 		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_Z)//Delete mode
 		{
 			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_Z))
@@ -425,6 +447,14 @@ int SelectMode ()
 			return 600;
 		}
 */
+		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_R)//Device select mode
+		{
+			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_R))
+			{
+				VIDEO_WaitVSync ();
+			}
+			return 1000;
+		}
 		while (PAD_ButtonsHeld (0) & PAD_TRIGGER_L)
 		{
 			if (PAD_ButtonsHeld (0) & PAD_BUTTON_Y){//Raw backup mode
@@ -452,6 +482,7 @@ int SelectMode ()
 			}
 		}
 #ifdef HW_RVL
+/*
 		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_A)
 		{
 			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_A))
@@ -460,6 +491,7 @@ int SelectMode ()
 			}
 			return 100;
 		}
+*/
 		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_2)
 		{
 			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_2))//Delete mode
@@ -502,6 +534,14 @@ int SelectMode ()
 			return 600;
 		}
 */
+		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_1)//Device select mode
+		{
+			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_1))
+			{
+				VIDEO_WaitVSync ();
+			}
+			return 1000;
+		}
 		while (WPAD_ButtonsHeld (0) & WPAD_BUTTON_B)
 		{
 			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_MINUS){//Raw backup mode
@@ -749,7 +789,7 @@ void showCardInfo(int sel){
 	//clear right pane, but just the card info
 	DrawBoxFilled(375, 165, 605, 390, COL_BG1);
 	//clear the right side just in case we went offscreen with previous comment
-	DrawVLine (606, 145, 390, COL_BG2);
+	DrawVLine (606, 145, 390, COL_BG1);
 	DrawVLine (608, 145, 390, COL_BG2);
 	DrawBoxFilled(610, 145, 640, 390, COL_BG2);
 
@@ -760,7 +800,7 @@ void showCardInfo(int sel){
 	char temp[5];
 
 	char folder[1024];
-	sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[sel]);
+	sprintf (folder, "%s:/%s/%s",fatpath, currFolder, (char*)filelist[sel]);
 	
 	if(isdir_sd(folder) == 1)
 	{
@@ -853,13 +893,14 @@ void showSaveInfo(int sel)
 	int y = 165, x = 378, j;
 	char gamecode[5], company[3], txt[1024];
 	int isFolder = 0;
-
+	
 	//clear right pane, but just the save info
 	DrawBoxFilled(375, 145, 605, 390, COL_BG1);
 	//clear the right side just in case we went offscreen with previous comment
-	DrawVLine (606, 145, 390, COL_BG2);
+	DrawVLine (606, 145, 390, COL_BG1);
 	DrawVLine (608, 145, 390, COL_BG2);
 	DrawBoxFilled(610, 145, 640, 390, COL_BG2);
+
 
 	// read file, display some more info
 	// TODO: only read the necessary header + comment, display banner and icon files
@@ -868,7 +909,7 @@ void showSaveInfo(int sel)
 		//Dragonbane: Show basic info if folder
 		
 		char folder[1024];
-		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[sel]);
+		sprintf (folder, "%s:/%s/%s",fatpath, currFolder, (char*)filelist[sel]);
 	
 		if(isdir_sd(folder) == 1)
 		{
@@ -1090,7 +1131,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 			DrawBoxFilled(30, 55, 30+330, 50+16, COL_BG2);
 			setfontsize (10);
 			setfontcolour(COL_FONT);
-			sprintf (folder, "fat:/%s/", currFolder);
+			sprintf (folder, "%s:/%s/",fatpath, currFolder);
 			DrawText(40, 66, folder);
 		}
 		setfontsize(14);
@@ -1104,7 +1145,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 			//changed this to limit characters shown in filename since display gets weird
 			//if we let the entire filename appear
 
-			sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[i]);
+			sprintf (folder, "%s:/%s/%s",fatpath, currFolder, (char*)filelist[i]);
 	
 			
 			if(isdir_sd(folder) == 1)
@@ -1158,7 +1199,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		setfontcolour(COL_FONT);
 		
 		//user just pressed up, down, left or right, upordown holds the correction needded
-		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection+upordown]);
+		sprintf (folder, "%s:/%s/%s",fatpath, currFolder, (char*)filelist[selection+upordown]);
 	
 		if(isdir_sd(folder) == 1)
 		{
@@ -1183,7 +1224,7 @@ static void ShowFiles (int offset, int selection, int upordown, int saveinfo) {
 		setfontcolour(COL_FONT);
 		
 		
-		sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection]);
+		sprintf (folder, "%s:/%s/%s",fatpath, currFolder, (char*)filelist[selection]);
 	
 		if(isdir_sd(folder) == 1)
 		{
@@ -1377,7 +1418,7 @@ int ShowSelector (int saveinfo)
 #endif
 
 			char folder[1024];
-			sprintf (folder, "fat:/%s/%s", currFolder, (char*)filelist[selection]);
+			sprintf (folder, "%s:/%s/%s",fatpath, currFolder, (char*)filelist[selection]);
 	
 			if(isdir_sd(folder) == 0)
 			{
