@@ -49,7 +49,7 @@
 #define WIIUSB_PATH "usb"
 char fatpath[4];
 
-const char appversion[] = "v1.5.1b2";
+const char appversion[] = "v1.5.2";
 int mode;
 int cancel;
 int doall;
@@ -174,7 +174,7 @@ static bool initFAT(int device)
 			}
 			if (!fatMountSimple (SDGECKOA_PATH, &__io_gcsda))
 			{
-				WaitPrompt("Error Mounting SD fat!");
+				WaitPrompt("Error Mounting slot A SD fat!");
 				return false;
 			}
 			DEVICES[DEV_GCSDA] = DEV_MOUNTED;
@@ -190,7 +190,7 @@ static bool initFAT(int device)
 			}
 			if (!fatMountSimple (SDGECKOB_PATH, &__io_gcsdb))
 			{
-				WaitPrompt("Error Mounting SD fat!");
+				WaitPrompt("Error Mounting slot B SD fat!");
 				return false;
 			}
 			DEVICES[DEV_GCSDB] = DEV_MOUNTED;
@@ -206,7 +206,7 @@ static bool initFAT(int device)
 			}
 			if (!fatMountSimple (SD2SP2_PATH, &__io_gcsd2))
 			{
-				WaitPrompt("Error Mounting SD fat!");
+				WaitPrompt("Error Mounting SD2SP2 SD fat!");
 				return false;
 			}
 			DEVICES[DEV_GCSDC] = DEV_MOUNTED;
@@ -222,7 +222,7 @@ static bool initFAT(int device)
 			}
 			if (!fatMountSimple (GCLOADER_PATH, &__io_gcode))
 			{
-				WaitPrompt("Error Mounting SD fat!");
+				WaitPrompt("Error Mounting GCLoader SD fat!");
 				return false;
 			}
 			DEVICES[DEV_GCODE] = DEV_MOUNTED;
@@ -233,12 +233,12 @@ static bool initFAT(int device)
 			__io_wiisd.startup();
 			if (!__io_wiisd.isInserted())
 			{
-				WaitPrompt("No SD card inserted!");
+				WaitPrompt("No SD card inserted in front SD slot!");
 				return false;
 			}
 			if (!fatMountSimple (WIISD_PATH, &__io_wiisd))
 			{
-				WaitPrompt("Error Mounting SD fat!");
+				WaitPrompt("Error Mounting Wii SD fat!");
 				return false;
 			}
 			DEVICES[DEV_WIISD] = DEV_MOUNTED;
@@ -249,12 +249,12 @@ static bool initFAT(int device)
 			__io_usbstorage.startup();
 			if (!__io_usbstorage.isInserted())
 			{
-				WaitPrompt("No usb device inserted!");
+				WaitPrompt("No USB device inserted!");
 				return false;
 			}
 			if (!fatMountSimple (WIIUSB_PATH, &__io_usbstorage))
 			{
-				WaitPrompt("Error Mounting SD fat!");
+				WaitPrompt("Error Mounting USB fat!");
 				return false;
 			}
 			DEVICES[DEV_WIIUSB] = DEV_MOUNTED;
@@ -271,107 +271,6 @@ static bool initFAT(int device)
 	return true;
 }
 
-/*
-// 1 for Internal SD, 0 for fat32 usb
-static int initFAT2(int device)
-{
-	SD2SP2 = 0;
-	ShowAction("Mounting device...");
-#ifdef	HW_RVL
-	if (device){//try SD card first
-		__io_wiisd.startup();
-		if (!__io_wiisd.isInserted())
-		{
-			ShowAction ("No SD card inserted! Trying USB storage.");
-			sleep(2);
-				__io_usbstorage.startup();
-			if (!__io_usbstorage.isInserted())
-			{
-				WaitPrompt ("No USB device inserted either!");
-				return 0;
-			}
-			else if (!fatMountSimple ("fat", &__io_usbstorage)){
-				WaitPrompt("Error Mounting USB fat!");
-				return 0;
-			}
-			return 1;//usb mounted
-		}
-		if (!fatMountSimple ("fat", &__io_wiisd))
-		{
-			WaitPrompt("Error Mounting SD fat!");
-			return 0;
-		}
-	}else if (!device)//try USB first
-	{
-		__io_usbstorage.startup();
-		if (!__io_usbstorage.isInserted())
-		{
-			ShowAction ("No usb device inserted! Trying internal SD.");
-			sleep(2);
-				__io_wiisd.startup();
-			if (!__io_wiisd.isInserted())
-			{
-				WaitPrompt ("No SD card inserted either!");
-				return 0;
-			}
-			else if (!fatMountSimple ("fat", &__io_wiisd)){
-				WaitPrompt("Error Mounting SD fat!");
-				return 0;
-			}
-			return 1;//SD mounted
-		}
-		if (!fatMountSimple ("fat", &__io_usbstorage))
-		{
-			WaitPrompt("Error Mounting USB fat!");
-			return 0;
-		}
-	}
-#else
-	int i =0;
-	s32 ret;
-	if (device)
-	{//Memcard in SLOT B, SD gecko in SLOT A
-		//This will ensure SD gecko is recognized if inserted or changed to another slot after GCMM is executed
-		for(i=0;i<10;i++){
-			ret = CARD_Probe(CARD_SLOTA);
-			if (ret == CARD_ERROR_WRONGDEVICE)
-				break;
-		}
-		__io_gcsda.startup();
-		if (!__io_gcsda.isInserted())
-		{
-			WaitPrompt ("No SD Gecko inserted! Insert it in slot A and restart");
-			return 0;
-		}
-		if (!fatMountSimple ("fat", &__io_gcsda))
-		{
-			WaitPrompt("Error Mounting SD fat!");
-			return 0;
-		}
-	}else //Memcard in SLOT A, SD gecko in SLOT B
-	{
-		//This will ensure SD gecko is recognized if inserted or changed to another slot after GCMM is executed
-		for(i=0;i<10;i++){
-			ret = CARD_Probe(CARD_SLOTB);
-			if (ret == CARD_ERROR_WRONGDEVICE)
-				break;
-		}	
-		__io_gcsdb.startup();
-		if (!__io_gcsdb.isInserted())
-		{
-			WaitPrompt ("No SD Gecko inserted! Insert it in slot B and restart");
-			return 0;
-		}
-		if (!fatMountSimple ("fat", &__io_gcsdb))
-		{
-			WaitPrompt("Error Mounting SD fat!");
-			return 0;
-		}
-	}
-#endif
-	return 1;
-}
-*/
 void deinitFAT()
 {
 	//First unmount all the devs...
@@ -409,30 +308,226 @@ void deinitFAT()
 	}
 #endif
 }
-/*
-void deinitFAT2()
+
+u8 skip_selector = 1;
+int device_select()
 {
-	//First unmount all the devs...
-	fatUnmount ("fat");
-	//...and then shutdown em!
-#ifdef	HW_RVL
-	__io_wiisd.shutdown();
-	__io_usbstorage.shutdown();
-#else
-	if (SD2SP2)
-	{
-		__io_gcsd2.shutdown();
-	}
-	else
-	{
-		if(MEM_CARD)
-			__io_gcsda.shutdown();
-		if(!MEM_CARD)
-			__io_gcsdb.shutdown();
-	}
+	u32 p, ph;
+#ifdef HW_RVL
+	u32 wp, wph;
 #endif
+	
+	int x = 170;
+	int y = 280;
+	int x_text = x+15;
+	int y_text = y+20;
+	int selected = 0;
+	u8 draw = 1;
+	setfontsize(14);
+	setfontcolour(COL_FONT);
+
+	int i = 0;
+	u8 selected2device[4] = {0, 0, 0, 0};
+	//If there are no fat devices skip
+	if (!DEVICES[DEV_NUM]){
+		WaitPrompt (NOFAT_MSG);
+		return 0;
+	}else if (DEVICES[DEV_NUM] == 1 && skip_selector ){ //Only one device was detected, so mount it, but only on first boot
+		skip_selector = 0;
+		for (i=1;i<=DEV_TOTAL;i++)
+		{
+			if (DEVICES[i])
+				return i;
+		}
+	}else{
+	skip_selector = 0;
+	//Selector screen
+		while(1)
+		{
+			//Draw device selector
+			if (draw){
+				writeStatusBar("Press A to select","");
+				draw = 0;
+				DrawBoxFilled(x, y, x+290, y+90, COL_BG1);
+				y_text= y+20;
+				x_text = x+15;
+				DrawText(x_text, y_text, "Please select your device:");
+				y_text+=20;
+				x_text += 24;
+		#ifdef HW_RVL
+				if(DEVICES[DEV_WIISD]){
+					DrawText(x_text, y_text, "Wii Front SD slot");
+					y_text+=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_WIISD;
+							break;
+						}
+					}
+				}
+				if(DEVICES[DEV_WIIUSB]){
+					DrawText(x_text, y_text, "USB storage device");
+					y_text+=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_WIIUSB;
+							break;
+						}
+					}
+				}
+				if(DEVICES[DEV_GCSDA]){
+					DrawText(x_text, y_text, "Slot A SD Gecko");
+					y_text+=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_GCSDA;
+							break;
+						}
+					}
+				}
+				if(DEVICES[DEV_GCSDB]){
+					DrawText(x_text, y_text, "Slot B SD Gecko");
+					y_text=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_GCSDB;
+							break;
+						}
+					}
+				}
+		#else
+				if(DEVICES[DEV_GCSDC]){
+					DrawText(x_text, y_text, "SD2SP2");
+					y_text+=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_GCSDC;
+							break;
+						}
+					}
+				}
+				if(DEVICES[DEV_GCSDA]){
+					DrawText(x_text, y_text, "Slot A SD Gecko");
+					y_text+=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_GCSDA;
+							break;
+						}
+					}
+				}
+				if(DEVICES[DEV_GCSDB]){
+					DrawText(x_text, y_text, "Slot B SD Gecko");
+					y_text+=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_GCSDB;
+							break;
+						}
+					}
+				}
+				if(DEVICES[DEV_GCODE]){
+					DrawText(x_text, y_text, "GC Loader");
+					y_text+=15;
+					for (i=0;i<4;i++)
+					{
+						if (!selected2device[i])
+						{
+							selected2device[i]=DEV_GCODE;
+							break;
+						}
+					}
+				}
+		#endif
+				
+				//Draw cursor
+				y_text= y+40;
+				x_text = x+20;
+				switch (selected)
+				{
+					case 0:
+						DrawText(x_text, y_text, ">>");
+						break;
+					case 1:
+						DrawText(x_text, y_text+15, ">>");
+						break;
+					case 2:
+						DrawText(x_text, y_text+15+15, ">>");
+						break;
+					case 3:
+						DrawText(x_text, y_text+15+15+15, ">>");
+						break;
+					default:
+						break;
+				}
+			}//end if (draw)
+			
+			p = PAD_ButtonsDown (0);
+	#ifdef HW_RVL
+			wp = WPAD_ButtonsDown (0);
+	#endif
+			
+			if (p & PAD_BUTTON_A
+		#ifdef HW_RVL
+				|| wp & WPAD_BUTTON_A
+		#endif
+			)
+			{
+				//Do something
+				return selected2device[selected];
+			}
+			if (p & PAD_BUTTON_DOWN
+		#ifdef HW_RVL
+				|| wp & WPAD_BUTTON_DOWN
+		#endif
+			)
+			{
+				selected +=1;
+				if (selected >= DEVICES[DEV_NUM]) selected = 0;
+				draw = 1;
+			}
+			if (p & PAD_BUTTON_UP
+		#ifdef HW_RVL
+				|| wp & WPAD_BUTTON_UP
+		#endif
+			)
+			{
+				selected -=1;
+				if (selected < 0) selected = DEVICES[DEV_NUM]-1;
+				draw = 1;
+			}
+			//char msg[256];
+			//sprintf(msg, "Selected device: %d Total %d DN%d SDA%d SDB%d SDC%d GL%d WSD%d WU%d", selected, DEVICES[DEV_NUM], DEVICES[1],DEVICES[2],DEVICES[3],DEVICES[4],DEVICES[5],DEVICES[6] );
+			/*
+#define DEV_NUM 	0
+#define DEV_GCSDA 	1
+#define DEV_GCSDB 	2
+#define DEV_GCSDC 	3
+#define DEV_GCODE 	4
+#define DEV_WIISD 	5
+#define DEV_WIIUSB	6
+			*/
+			//writeStatusBar(msg, "");
+			ShowScreen();
+		}//end while(1)
+	}
+	return 0;
 }
-*/
+
 /****************************************************************************
 * Initialise Video
 *
@@ -1033,225 +1128,6 @@ void SD_RawRestoreMode ()
 	return;
 }
 
-u8 skip_selector = 1;
-int device_select()
-{
-	u32 p, ph;
-#ifdef HW_RVL
-	u32 wp, wph;
-#endif
-	
-	int x = 170;
-	int y = 280;
-	int x_text = x+15;
-	int y_text = y+20;
-	int selected = 0;
-	u8 draw = 1;
-	setfontsize(14);
-	setfontcolour(COL_FONT);
-
-	int i = 0;
-	u8 selected2device[4] = {0, 0, 0, 0};
-	//If there are no fat devices skip
-	if (!DEVICES[DEV_NUM]){
-		WaitPrompt (NOFAT_MSG);
-		return 0;
-	}else if (DEVICES[DEV_NUM] == 1 && skip_selector ){ //Only one device was detected, so mount it, but only on first boot
-		skip_selector = 0;
-		for (i=1;i<=DEV_TOTAL;i++)
-		{
-			if (DEVICES[i])
-				return i;
-		}
-	}else{
-	skip_selector = 0;
-	//Selector screen
-		while(1)
-		{
-			//Draw device selector
-			if (draw){
-				writeStatusBar("Press A to select","");
-				draw = 0;
-				DrawBoxFilled(x, y, x+290, y+90, COL_BG1);
-				y_text= y+20;
-				x_text = x+15;
-				DrawText(x_text, y_text, "Please select your device:");
-				y_text+=20;
-				x_text += 24;
-		#ifdef HW_RVL
-				if(DEVICES[DEV_WIISD]){
-					DrawText(x_text, y_text, "Wii Front SD slot");
-					y_text+=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_WIISD;
-							break;
-						}
-					}
-				}
-				if(DEVICES[DEV_WIIUSB]){
-					DrawText(x_text, y_text, "USB storage device");
-					y_text+=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_WIIUSB;
-							break;
-						}
-					}
-				}
-				if(DEVICES[DEV_GCSDA]){
-					DrawText(x_text, y_text, "Slot A SD Gecko");
-					y_text+=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_GCSDA;
-							break;
-						}
-					}
-				}
-				if(DEVICES[DEV_GCSDB]){
-					DrawText(x_text, y_text, "Slot B SD Gecko");
-					y_text=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_GCSDB;
-							break;
-						}
-					}
-				}
-		#else
-				if(DEVICES[DEV_GCSDC]){
-					DrawText(x_text, y_text, "SD2SP2");
-					y_text+=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_GCSDC;
-							break;
-						}
-					}
-				}
-				if(DEVICES[DEV_GCSDA]){
-					DrawText(x_text, y_text, "Slot A SD Gecko");
-					y_text+=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_GCSDA;
-							break;
-						}
-					}
-				}
-				if(DEVICES[DEV_GCSDB]){
-					DrawText(x_text, y_text, "Slot B SD Gecko");
-					y_text+=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_GCSDB;
-							break;
-						}
-					}
-				}
-				if(DEVICES[DEV_GCODE]){
-					DrawText(x_text, y_text, "GC Loader");
-					y_text+=15;
-					for (i=0;i<4;i++)
-					{
-						if (!selected2device[i])
-						{
-							selected2device[i]=DEV_GCODE;
-							break;
-						}
-					}
-				}
-		#endif
-				
-				//Draw cursor
-				y_text= y+40;
-				x_text = x+20;
-				switch (selected)
-				{
-					case 0:
-						DrawText(x_text, y_text, ">>");
-						break;
-					case 1:
-						DrawText(x_text, y_text+15, ">>");
-						break;
-					case 2:
-						DrawText(x_text, y_text+15+15, ">>");
-						break;
-					case 3:
-						DrawText(x_text, y_text+15+15+15, ">>");
-						break;
-					default:
-						break;
-				}
-			}//end if (draw)
-			
-			p = PAD_ButtonsDown (0);
-	#ifdef HW_RVL
-			wp = WPAD_ButtonsDown (0);
-	#endif
-			
-			if (p & PAD_BUTTON_A
-		#ifdef HW_RVL
-				|| wp & WPAD_BUTTON_A
-		#endif
-			)
-			{
-				//Do something
-				return selected2device[selected];
-			}
-			if (p & PAD_BUTTON_DOWN
-		#ifdef HW_RVL
-				|| wp & WPAD_BUTTON_DOWN
-		#endif
-			)
-			{
-				selected +=1;
-				if (selected >= DEVICES[DEV_NUM]) selected = 0;
-				draw = 1;
-			}
-			if (p & PAD_BUTTON_UP
-		#ifdef HW_RVL
-				|| wp & WPAD_BUTTON_UP
-		#endif
-			)
-			{
-				selected -=1;
-				if (selected < 0) selected = DEVICES[DEV_NUM]-1;
-				draw = 1;
-			}
-			//char msg[256];
-			//sprintf(msg, "Selected device: %d Total %d DN%d SDA%d SDB%d SDC%d GL%d WSD%d WU%d", selected, DEVICES[DEV_NUM], DEVICES[1],DEVICES[2],DEVICES[3],DEVICES[4],DEVICES[5],DEVICES[6] );
-			/*
-#define DEV_NUM 	0
-#define DEV_GCSDA 	1
-#define DEV_GCSDB 	2
-#define DEV_GCSDC 	3
-#define DEV_GCODE 	4
-#define DEV_WIISD 	5
-#define DEV_WIIUSB	6
-			*/
-			//writeStatusBar(msg, "");
-			ShowScreen();
-		}//end while(1)
-	}
-	return 0;
-}
-
 /****************************************************************************
 * Main
 ****************************************************************************/
@@ -1271,10 +1147,10 @@ int main (int argc, char *argv[])
 
 #ifdef HW_RVL
 	initialise_power();
-	//have_sd = initFAT(WaitPromptChoice ("Use internal SD or FAT32 USB device?", "USB", "SD"));
 #endif
 
 	detect_devices();
+
 	//Check for command line 
 	if (argc > 1)
 	{
@@ -1376,77 +1252,11 @@ int main (int argc, char *argv[])
 	}
 	
 	if (CUR_DEVICE) have_sd = initFAT(CUR_DEVICE);
-	
+
 	//Set correct memory card slot when SD gecko is selected device
 	if (CUR_DEVICE == DEV_GCSDB) MEM_CARD = 0;
 	else if (CUR_DEVICE == DEV_GCSDA) MEM_CARD = 1;
 
-/*
-	u32 p = PAD_ButtonsHeld(0);
-
-	//First try for a SD2SP2 device
-	SD2SP2 = 1;
-	u8 ask_device = 0;
-	if (argc > 1)
-	{
-		if (!strcmp(argv[1], "ask"))
-		{
-			ask_device = 1;
-		}
-		else if (!strcmp(argv[1], "sdgecko"))
-		{
-			SD2SP2 = 0;
-			ask_device = 2;
-		}
-	}
-	//If Z trigger or A button is held in startup, ask for device to use, regardless of bootup
-	if ( p & PAD_BUTTON_A || p & PAD_TRIGGER_Z)
-	{
-		SD2SP2 = 1;
-		ask_device = 1;
-	}
-	
-	if (SD2SP2)
-	{
-		__io_gcsd2.startup();
-		if (__io_gcsd2.isInserted() && ask_device != 2)
-		{
-			if (ask_device == 1 )
-			{
-				writeStatusBar("Use SD2SP2 or SD Gecko?", "B = SD Gecko   :   A = SD2SP2");
-				WaitRelease();
-				SD2SP2 = WaitPromptChoice ("Use SD2SP2 or SD Gecko?", "SD Gecko", "SD2SP2");
-			}
-			if(SD2SP2)
-			{
-				if (!fatMountSimple ("fat", &__io_gcsd2))
-				{
-					WaitPrompt("SD2SP2 detected, but Error mounting fat! Trying SD Gecko");
-					SD2SP2 = 0;
-					
-				}else
-				{
-					writeStatusBar("SD2SP2 mounted!", ""); //Also refreshes screen and makes version string appear
-					//WaitPrompt("SD2SP2 mounted!");
-					have_sd = 1;
-				}
-			}
-		}
-		else
-		{
-			//WaitPrompt("SD2SP2 not detected!");
-			SD2SP2 = 0;
-		}
-	}
-
-	if (!SD2SP2) //Ask where SD gecko is located if no SD2SP2 is detected
-	{
-		//Returns 1 (memory card in slot B, sd gecko in slot A) if A button was pressed and 0 if B button was pressed
-		MEM_CARD = WaitPromptChoice ("Please select the slot where SD Gecko is inserted", "SLOT B", "SLOT A");
-		have_sd = initFAT(MEM_CARD);
-	}
-#endif
-*/
 	selector_flag = 0;
 	skip_selector = 0;
 	for (;;)

@@ -30,7 +30,7 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                         UPDATE HISTORY                        ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-[What's New 1.5.2 - November 03, 2021 - By suloku]
+[What's New 1.5.2 - November 19, 2021 - By suloku]
 * Fixed exit/reboot secuence (finally)
 * Several card fixes thanks to Extrems and libogc2!
 * SD2SP2 fix
@@ -40,7 +40,7 @@ I (suloku) have updated the code to newest libraries to port it to the Wii syste
 * Devices can be swapped without rebooting GCMM now. When running device selector follow on screen instructions to know when you can safely insert/remove a device.
 * SDGecko support for Wii mode.
 * GCLoader support for Gamecube mode.
-* Show current device (wiisd/wiiusb/sdgecko/sd2sp2/gcloader/no device) under version string
+* Show current device (wiisd/wiiusb/sdgecko/sd2sp2/gcloader/no device) in main screen.
 * Support for command line paramenters in both wii and gamecube (use Swiis cli files for gamecube). Read more in cli_readme.txt. Pre-made cli files are included.
 * WII/GC: added Dark mode theme (as a separate dol file).
 * Background is changed depending on fat device being used (gamecube)
@@ -191,7 +191,7 @@ Accepted PlabloACZ and Picachu025 modifications, with the following changes:
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                             TO DO                             ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
-* Add hotswapping (memory cards can be swapped, SD Gecko/SD/USB can't be swapped)
+* SAMBA support for network mangement of savegames
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                 ABOUT SAVEGAMES AND RAW IMAGES                ·oø×O0|
@@ -239,8 +239,8 @@ MCI format (createad by softdev's sdmc) is a raw image of the card, preceded by 
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
 Users:
-* If you extract a device (USB, internal SD, USB gecko), it won't work againt. If you did so, reboot the GCMM. On the contrary
-* Memory cards can be extracted/inserted at will at the main menu screen. It is not recommended to change the card in any other screen.
+* If you extract a device (USB, internal SD, USB gecko), it won't work again. Run device selector again to remount the device or exit and restart GCMM.
+* Memory cards can be extracted/inserted at will at the main menu screen. It is not recommended to remove the card in any other screen.
 * Dolphin (wii/gc computer emulator) has a nice memory card manager, check it out!
 
 About usb devices:
@@ -249,7 +249,7 @@ About usb devices:
 Developers:
 
 * LibOGC card functions works with time functions that use Epoch (seconds since jan 1, 1970) as reference, while GameCube works with seconds since jan 1, 2000). The difference is 946684800 seconds
-* GCMM now uses libogc 1.8.11 git (2012-07-25) card.c, card.h and system.h with tueidj's patches for proper memory card unlocking. It would be wise to update those files in GCMM if changes are made to libogc concerning other functions. Note that even if libogc asumes the changes, as GCMM now uses some static functions from libogc, it needs card.c and card.h, but if libogc updates the sramex structure (system.h) and fixes the checksums in card.c, system.h will no longer be needed. --> as of 1.5 system.h is no longer needed. Still using custom card.c and card.h (for raw management and fixing PSO and FZERO savegames), card.c is updated to latest one in libogc at time of release. Libogc card unlocking has been adopted.
+* GCMM is compatible with libogc thanks to DacoTaco, but currently uses libogc2 with custom card.c (essentially libogc2's card.c with some modifications) due to libogc2 having support for sd2sp2 and gcloader, as well as many bugfixes. If changes are applied to libogc GCMM will be able to properly use it again.
 * Very good sources of documentation are libogc and dolphin's source code.
 * Card_Init() shall be called only once. Any subsequent call will be pointless; to change the company and gamecode one should use Card_setgamecode() and Card_setcompany libogc functions.
 
@@ -259,23 +259,31 @@ Developers:
 
 Unzip the archive. You will find the following folders inside:
 
-apps			Contains Homebrew Channel ready files
-				(see Homebrew Channel instructions below)
+apps				Contains Homebrew Channel ready files, both for normal and dark themed GCMM
+					(see Homebrew Channel instructions below)
 				
-gamecube		Contains GameCube DOL file (not required for Wii)
+gamecube			Contains GameCube DOL file, both normal and dark themed (not required for Wii)
+gamecube/cli files	Contains a set of cli files to use with swiss in gamecube mode. Read cli_readme.txt for mor information.
 				
+
+After boot, GCMM will check which devices are available. If only one device is available, GCMM will use it as default. If more than a single device is available GCMM will boot into the device selector screen. You may skip device selector screen at boot using command line arguments (check cli files for gamecube mode).
+
+Available devices in order shown by GCMM. Please don't connect more than one USB device in Wii mode.
 
     Wii
 ----------
-On the Wii, the savegames will be read from and written to the front SD slot or FAT32 USB device.
-The user will be prompted at startup for which device to use.
-If the selected device isn't available, GCMM will try to use the other device (i.e: user selects usb device but there's none connected, so GCMM will try to use the internal SD).
-Memory card can be in either slot.
+Wii SD
+Wii USB
+Slot A SD Gecko
+Slot B SD Gecko
 
 
   Gamecube
 ------------
-On the GameCube you will need a Gecko SD adapter in the slot A and place the memory card on slot B.
+SD2SP2
+Slot A SD Gecko
+Slot B SD Gecko
+GC Loader
 
 ------------------------------
 Loading / Running the app:
@@ -290,15 +298,14 @@ http://hbc.hackmii.com/
 
 Gamecube:
 ---------
-You can load gcmm via sdload and an SD card in slot A, or by streaming 
-it to your Gamecube, or by booting a bootable DVD with gcmm on it. 
+You can load gcmm via sdload and an SD card in slot A, or by streaming it to your Gamecube, or by booting a bootable DVD with gcmm on it. 
 This document doesn't cover how to do any of that. A good source for information on these topics is at http://www.gc-forever.com/wiki/index.php?title=Booting_Homebrew
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                          CONTROLS                             ·oø×O0|
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 
-They are shown at the screen.
+They are shown at the main screen.
 
 Raw mode controls: hold L (gamecube pad) or B (wiimote) then press the corresponding button
 * Raw Backup Mode:  GC_pad L+Y , Wiimote B+Minus
@@ -311,11 +318,11 @@ Raw mode controls: hold L (gamecube pad) or B (wiimote) then press the correspon
 `¨•¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨ ¨¨¨¨¨¨¨¨¨¨¨¨¨'
 Currently gcmm uses:
 
-* DevkitPPC r26: http://sourceforge.net/projects/devkitpro/files/devkitPPC/
-* libOGC 1.8.11 git (2012-07-25): http://sourceforge.net/projects/devkitpro/files/libogc
-	note: it compiles and runs fine with 1.8.11 release
-* libfat 1.0.11: http://sourceforge.net/projects/devkitpro/files/libfat/
-* libFreeType 2.4.2 port: http://sourceforge.net/projects/devkitpro/files/portlibs/ppc/
+* DevkitPPC as installed by devkitPro Updater 3.0.3 as of November 19th 2021: https://github.com/devkitPro/installer/releases
+* libOGC2 (updated libogc by Extrems) as of November 19th 2021: https://github.com/extremscorner/libogc2/commit/6bce86690ca2b45557f14460122bc7d43c5ac547
+* libfat updated by Extrems as of November 19th 2021: http://sourceforge.net/projects/devkitpro/files/libfat/
+* libFreeType 2.4.2 port, currently installed via pacman and devkitpro toolchain: https://github.com/devkitPro/pacman-packages
+	- Read more about installing portlibs: https://devkitpro.org/wiki/devkitPro_pacman
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                           CREDITS                             ·oø×O0|
@@ -329,9 +336,12 @@ Currently gcmm uses:
 * Tantric for pointing out that official memory cards won't work on wii mode, which encouraged me to continue gcmm as all my previous efforts where in vane due to using an official card for the testing.
 * tueidj, for his patches and very useful information and support. Official memory cards work due to his work.
 * dronesplitter for banner and icon implementation
-* PlabloACZ and Picachu025 for updating the source.
+* PlabloACZ and Picachu025 for updating the source on 2011 after I forgot about GCMM.
 * Nano(Excelsiior), for inspiring me to finally working again on GCMM
 * bm123456 and themanuel for beta testing and support
+* DacoTaco for libogc compatibility changes
+* Extrems for many libogc bugfixes, gcloader and sd2sp2 support in libogc, libfat updates and improvements
+* f3bandit for beta testing, specially gcloader support
 
 ×—–­—–­—–­—–­ –­—–­—–­—–­—–­—–­—–­—–­—–­—–­— ­—–­—–­—–­—–­—–­—–­—–­—-­—–­-–•¬
 |0O×øo·                                                               ·oø×O0|

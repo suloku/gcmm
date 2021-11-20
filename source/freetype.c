@@ -358,34 +358,44 @@ int SelectMode ()
 // DrawText(495,305,"choose your mode");
 	setfontsize(10);
 	setfontcolour(COL_FONT_STATUS);
+
 	DrawText(595,87,appversion);
+	//DrawText(595,97,"Device");
 	
 	switch(CUR_DEVICE)
 	{
 		case DEV_ND:
-			DrawText(595,97, "!Device");
+			DrawText(171,240, "!Device");
 			break;
 		case DEV_GCSDA:
-			DrawText(595,97, "GeckoA");
+			DrawText(171,240, "Gecko A");
 			break;
 		case DEV_GCSDB:
-			DrawText(595,97, "GeckoB");
+			DrawText(171,240, "Gecko B");
 			break;
 		case DEV_GCSDC:
-			DrawText(595,97, "SD2SP2");
+			DrawText(175,240, "SD2SP2"); //X coordinate is 175 to center it (has one less character than other strings)
 			break;
 		case DEV_GCODE:
-			DrawText(595,97, "GCLoader");
+			DrawText(171,240, "GCLoadr");
 			break;
 		case DEV_WIISD:
-			DrawText(595,97, "Wii SD");
+			DrawText(175,240, "Wii SD"); //X coordinate is 175 to center it (has one less character than other strings)
 			break;
 		case DEV_WIIUSB:
-			DrawText(595,97, "Wii USB");
+			DrawText(171,240, "Wii USB");
 			break;
 		default:
 			break;
 	}
+	/*
+	"GCLoadr"
+	" Wii SD"
+	"Wii USB"
+	"Gecko A"
+	"!Device"
+	"SD2SP2"
+	*/
 
 	setfontsize (FONT_SIZE);
 	writeStatusBar("Choose your mode","");
