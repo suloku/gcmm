@@ -20,6 +20,7 @@
 #include "sdsupp.h"
 #include "bitmap.h"
 #include "raw.h"
+#include "input.h"
 
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
@@ -326,9 +327,9 @@ void ShowAction (char *msg)
 void WaitRelease()
 {
 	//Wait for user to release the button
-	while (PAD_ButtonsHeld (0)
+	while (padsButtonsHeld()
 #ifdef HW_RVL
-	        | WPAD_ButtonsHeld(0)
+	        | wpadsButtonsHeld()
 #endif
 	      )
 		VIDEO_WaitVSync ();
@@ -406,85 +407,85 @@ int SelectMode ()
 	for (;;)
 	{
 /*
-		if (PAD_ButtonsHeld (0) & PAD_BUTTON_A)
+		if (padsButtonsHeld() & PAD_BUTTON_A)
 		{
-			while ((PAD_ButtonsDown (0) & PAD_BUTTON_A))
+			while ((padsButtonsDown() & PAD_BUTTON_A))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 100;
 		}
 */
-		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_Z)//Delete mode
+		if (padsButtonsHeld() & PAD_TRIGGER_Z)//Delete mode
 		{
-			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_Z))
+			while ((padsButtonsDown() & PAD_TRIGGER_Z))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 200;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_BUTTON_Y)//Backup mode
+		if (padsButtonsHeld() & PAD_BUTTON_Y)//Backup mode
 		{
-			while ((PAD_ButtonsDown (0) & PAD_BUTTON_Y))
+			while ((padsButtonsDown() & PAD_BUTTON_Y))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 300;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_BUTTON_X)//Restore mode
+		if (padsButtonsHeld() & PAD_BUTTON_X)//Restore mode
 		{
-			while ((PAD_ButtonsDown (0) & PAD_BUTTON_X))
+			while ((padsButtonsDown() & PAD_BUTTON_X))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 400;
 		}
-		if (PAD_ButtonsHeld (0) & PAD_BUTTON_START)//Exit
+		if (padsButtonsHeld() & PAD_BUTTON_START)//Exit
 		{
-			while ((PAD_ButtonsDown (0) & PAD_BUTTON_START))
+			while ((padsButtonsDown() & PAD_BUTTON_START))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 500;
 		}
 /*
-		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_R)//Backup all mode
+		if (padsButtonsHeld() & PAD_TRIGGER_R)//Backup all mode
 		{
-			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_R))
+			while ((padsButtonsDown() & PAD_TRIGGER_R))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 600;
 		}
 */
-		if (PAD_ButtonsHeld (0) & PAD_TRIGGER_R)//Device select mode
+		if (padsButtonsHeld() & PAD_TRIGGER_R)//Device select mode
 		{
-			while ((PAD_ButtonsDown (0) & PAD_TRIGGER_R))
+			while ((padsButtonsDown() & PAD_TRIGGER_R))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 1000;
 		}
-		while (PAD_ButtonsHeld (0) & PAD_TRIGGER_L)
+		while (padsButtonsHeld() & PAD_TRIGGER_L)
 		{
-			if (PAD_ButtonsHeld (0) & PAD_BUTTON_Y){//Raw backup mode
-				while ((PAD_ButtonsDown (0) & PAD_TRIGGER_L) || (PAD_ButtonsDown (0) & PAD_BUTTON_Y))
+			if (padsButtonsHeld() & PAD_BUTTON_Y){//Raw backup mode
+				while ((padsButtonsDown() & PAD_TRIGGER_L) || (padsButtonsDown() & PAD_BUTTON_Y))
 				{
 					VIDEO_WaitVSync ();
 				}
 				return 700;
 			}
 
-			if (PAD_ButtonsHeld (0) & PAD_BUTTON_X){//Raw restore mode
-				while ((PAD_ButtonsDown (0) & PAD_TRIGGER_L) || (PAD_ButtonsDown (0) & PAD_BUTTON_X))
+			if (padsButtonsHeld() & PAD_BUTTON_X){//Raw restore mode
+				while ((padsButtonsDown() & PAD_TRIGGER_L) || (padsButtonsDown() & PAD_BUTTON_X))
 				{
 					VIDEO_WaitVSync ();
 				}
 				return 800;
 			}
 
-			if (PAD_ButtonsHeld (0) & PAD_TRIGGER_Z){//Format card mode
-				while ((PAD_ButtonsDown (0) & PAD_TRIGGER_L) || (PAD_ButtonsDown (0) & PAD_TRIGGER_Z))
+			if (padsButtonsHeld() & PAD_TRIGGER_Z){//Format card mode
+				while ((padsButtonsDown() & PAD_TRIGGER_L) || (padsButtonsDown() & PAD_TRIGGER_Z))
 				{
 					VIDEO_WaitVSync ();
 				}
@@ -493,85 +494,85 @@ int SelectMode ()
 		}
 #ifdef HW_RVL
 /*
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_A)
+		if (wpadsButtonsHeld() & WPAD_BUTTON_A)
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_A))
+			while ((wpadsButtonsDown() & WPAD_BUTTON_A))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 100;
 		}
 */
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_2)
+		if (wpadsButtonsHeld() & WPAD_BUTTON_2)
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_2))//Delete mode
+			while ((wpadsButtonsDown() & WPAD_BUTTON_2))//Delete mode
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 200;
 		}
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_MINUS)//Backup mode
+		if (wpadsButtonsHeld() & WPAD_BUTTON_MINUS)//Backup mode
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_MINUS))
+			while ((wpadsButtonsDown() & WPAD_BUTTON_MINUS))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 300;
 		}
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_PLUS)//Restore mode
+		if (wpadsButtonsHeld() & WPAD_BUTTON_PLUS)//Restore mode
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_PLUS))
+			while ((wpadsButtonsDown() & WPAD_BUTTON_PLUS))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 400;
 		}
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_HOME)//Exit
+		if (wpadsButtonsHeld() & WPAD_BUTTON_HOME)//Exit
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_HOME))
+			while ((wpadsButtonsDown() & WPAD_BUTTON_HOME))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 500;
 		}
 /*
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_1)//Backup all mode
+		if (wpadsButtonsHeld() & WPAD_BUTTON_1)//Backup all mode
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_1))
+			while ((wpadsButtonsDown() & WPAD_BUTTON_1))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 600;
 		}
 */
-		if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_1)//Device select mode
+		if (wpadsButtonsHeld() & WPAD_BUTTON_1)//Device select mode
 		{
-			while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_1))
+			while ((wpadsButtonsDown() & WPAD_BUTTON_1))
 			{
 				VIDEO_WaitVSync ();
 			}
 			return 1000;
 		}
-		while (WPAD_ButtonsHeld (0) & WPAD_BUTTON_B)
+		while (wpadsButtonsHeld() & WPAD_BUTTON_B)
 		{
-			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_MINUS){//Raw backup mode
-				while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_B) || (WPAD_ButtonsDown (0) & WPAD_BUTTON_MINUS))
+			if (wpadsButtonsHeld() & WPAD_BUTTON_MINUS){//Raw backup mode
+				while ((wpadsButtonsDown() & WPAD_BUTTON_B) || (wpadsButtonsDown() & WPAD_BUTTON_MINUS))
 				{
 					VIDEO_WaitVSync ();
 				}
 				return 700;
 			}
 
-			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_PLUS){//Raw restore mode
-				while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_B) || (WPAD_ButtonsDown (0) & WPAD_BUTTON_PLUS))
+			if (wpadsButtonsHeld() & WPAD_BUTTON_PLUS){//Raw restore mode
+				while ((wpadsButtonsDown() & WPAD_BUTTON_B) || (wpadsButtonsDown() & WPAD_BUTTON_PLUS))
 				{
 					VIDEO_WaitVSync ();
 				}
 				return 800;
 			}
 
-			if (WPAD_ButtonsHeld (0) & WPAD_BUTTON_2){//Format card mode
-				while ((WPAD_ButtonsDown (0) & WPAD_BUTTON_B) || (WPAD_ButtonsDown (0) & WPAD_BUTTON_2))
+			if (wpadsButtonsHeld() & WPAD_BUTTON_2){//Format card mode
+				while ((wpadsButtonsDown() & WPAD_BUTTON_B) || (wpadsButtonsDown() & WPAD_BUTTON_2))
 				{
 					VIDEO_WaitVSync ();
 				}
@@ -594,14 +595,14 @@ int SelectMode ()
 void WaitButtonA ()
 {
 #ifdef HW_DOL
-	while (PAD_ButtonsDown (0) & PAD_BUTTON_A );
-	while (!(PAD_ButtonsDown (0) & PAD_BUTTON_A));
+	while (padsButtonsDown() & PAD_BUTTON_A );
+	while (!(padsButtonsDown() & PAD_BUTTON_A));
 #else
 	while (1)
 	{
-		if (PAD_ButtonsDown (0) & PAD_BUTTON_A )
+		if (padsButtonsDown() & PAD_BUTTON_A )
 			break;
-		if (WPAD_ButtonsDown (0) & WPAD_BUTTON_A )
+		if (wpadsButtonsDown() & WPAD_BUTTON_A )
 			break;
 		if (power)
 		{
@@ -610,9 +611,9 @@ void WaitButtonA ()
 	}
 	while (1)
 	{
-		if (!(PAD_ButtonsDown (0) & PAD_BUTTON_A))
+		if (!(padsButtonsDown() & PAD_BUTTON_A))
 			break;
-		if (!(WPAD_ButtonsDown (0) & WPAD_BUTTON_A))
+		if (!(wpadsButtonsDown() & WPAD_BUTTON_A))
 			break;
 		if (power)
 		{
@@ -632,14 +633,14 @@ int WaitButtonAB ()
 #ifdef HW_RVL
 	u32 gc_btns, wm_btns;
 
-	while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_BUTTON_B))
-	        || (WPAD_ButtonsDown(0) & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_CLASSIC_BUTTON_A | WPAD_CLASSIC_BUTTON_B))
+	while ( (padsButtonsDown() & (PAD_BUTTON_A | PAD_BUTTON_B))
+	        || (wpadsButtonsDown() & (WPAD_BUTTON_A | WPAD_BUTTON_B | WPAD_CLASSIC_BUTTON_A | WPAD_CLASSIC_BUTTON_B))
 	      ) VIDEO_WaitVSync();
 
 	while (1)
 	{
-		gc_btns = PAD_ButtonsDown (0);
-		wm_btns = WPAD_ButtonsDown (0);
+		gc_btns = padsButtonsDown();
+		wm_btns = wpadsButtonsDown();
 		if ( (gc_btns & PAD_BUTTON_A) || (wm_btns & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A)) )
 		{	
 			WaitRelease();
@@ -654,11 +655,11 @@ int WaitButtonAB ()
 #else
 	u32 gc_btns;
 
-	while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_BUTTON_B)) ) VIDEO_WaitVSync();
+	while ( (padsButtonsDown() & (PAD_BUTTON_A | PAD_BUTTON_B)) ) VIDEO_WaitVSync();
 
 	while (1)
 	{
-		gc_btns = PAD_ButtonsDown (0);
+		gc_btns = padsButtonsDown();
 		if ( gc_btns & PAD_BUTTON_A )
 		{
 			WaitRelease();
@@ -683,14 +684,14 @@ int WaitButtonAZ ()
 #ifdef HW_RVL
 	u32 gc_btns, wm_btns;
 
-	while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_TRIGGER_Z))
-	        || (WPAD_ButtonsDown(0) & (WPAD_BUTTON_A | WPAD_BUTTON_2 | WPAD_CLASSIC_BUTTON_A | WPAD_CLASSIC_BUTTON_ZR | WPAD_CLASSIC_BUTTON_ZL))
+	while ( (padsButtonsDown() & (PAD_BUTTON_A | PAD_TRIGGER_Z))
+	        || (wpadsButtonsDown() & (WPAD_BUTTON_A | WPAD_BUTTON_2 | WPAD_CLASSIC_BUTTON_A | WPAD_CLASSIC_BUTTON_ZR | WPAD_CLASSIC_BUTTON_ZL))
 	      ) VIDEO_WaitVSync();
 
 	while (1)
 	{
-		gc_btns = PAD_ButtonsDown (0);
-		wm_btns = WPAD_ButtonsDown (0);
+		gc_btns = padsButtonsDown();
+		wm_btns = wpadsButtonsDown();
 		if ( (gc_btns & PAD_BUTTON_A) || (wm_btns & (WPAD_BUTTON_A | WPAD_CLASSIC_BUTTON_A)) )
 		{
 			WaitRelease();
@@ -705,11 +706,11 @@ int WaitButtonAZ ()
 #else
 	u32 gc_btns;
 
-	while ( (PAD_ButtonsDown (0) & (PAD_BUTTON_A | PAD_TRIGGER_Z)) ) VIDEO_WaitVSync();
+	while ( (padsButtonsDown() & (PAD_BUTTON_A | PAD_TRIGGER_Z)) ) VIDEO_WaitVSync();
 
 	while (1)
 	{
-		gc_btns = PAD_ButtonsDown (0);
+		gc_btns = padsButtonsDown();
 		if ( gc_btns & PAD_BUTTON_A )
 		{
 			WaitRelease();
@@ -1458,9 +1459,9 @@ int ShowSelector (int saveinfo)
 #endif
         }
 
-		p = PAD_ButtonsHeld (0);
+		p = padsButtonsHeld();
 #ifdef HW_RVL
-		wp = WPAD_ButtonsHeld (0);
+		wp = wpadsButtonsHeld();
 #endif
 
 		//Slow down scrolling a little

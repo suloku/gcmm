@@ -32,6 +32,7 @@
 #include "sdsupp.h"
 #include "freetype.h"
 #include "bitmap.h"
+#include "input.h"
 
 #ifndef HW_RVL
 #include "aram/sidestep.h"
@@ -476,9 +477,9 @@ int device_select()
 				}
 			}//end if (draw)
 			
-			p = PAD_ButtonsDown (0);
+			p = padsButtonsDown();
 	#ifdef HW_RVL
-			wp = WPAD_ButtonsDown (0);
+			wp = wpadsButtonsDown();
 	#endif
 			
 			if (p & PAD_BUTTON_A
